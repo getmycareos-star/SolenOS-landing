@@ -308,6 +308,68 @@ await record("00a first-use consent gate and inline orientation", async () => {
   await secondGate.context.close();
 });
 
+// 0b. A linked account can restore its server-bound care record after browser storage is cleared.
+const restoreSession = await newSession("account restore after storage clear");
+const restoreEmail = `restore-${randomUUID()}@example.test`;
+const restorePassword = "CI-account-restore-passphrase-2026!";
+const restoreConsent = await request("/api/v1/consent", {
+  token: restoreSession.access_token,
+  method: "POST",
+  body: {
+    person_id: restoreSession.person.id,
+    caregiver_id: restoreSession.caregiver.id,
+    medical_disclaimer_acknowledged: true,
+    privacy_model_acknowledged: true,
+    multi_caregiver_acknowledged: true,
+    no_advertising_acknowledged: true,
+    data_improvement_consent: false,
+    accepted_terms_version: "2026-10",
+  },
+});
+assert.equal(restoreConsent.status, 200, JSON.stringify(restoreConsent.payload));
+const restoreProfile = await request("/api/v1/care-profile", {
+  token: restoreSession.access_token,
+  method: "PUT",
+  body: {
+    name: "Recovered care recipient",
+    relationship: "Daughter",
+    condition: null,
+  },
+});
+assert.equal(restoreProfile.status, 200, JSON.stringify(restoreProfile.payload));
+const restoreCompletion = await request("/api/v1/care-profile/orientation-complete", {
+  token: restoreSession.access_token,
+  method: "POST",
+  body: {},
+});
+assert.equal(restoreCompletion.status, 200, JSON.stringify(restoreCompletion.payload));
+const accountCreated = await request("/api/v1/accounts", {
+  token: restoreSession.access_token,
+  method: "POST",
+  body: { email: restoreEmail, password: restorePassword },
+});
+assert.equal(accountCreated.status, 201, JSON.stringify(accountCreated.payload));
+await record("00b existing account restores the saved care record after browser storage is cleared", async () => {
+  const { context, page, pageErrors } = await createBrowserPage(
+    restoreSession,
+    "/start",
+    { width: 390, height: 844 },
+  );
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByText("Already have a SolenOS account? Sign in", { exact: true }).click();
+  await page.locator("#existing-account-email").fill(restoreEmail);
+  await page.locator("#existing-account-password").fill(restorePassword);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await page.waitForURL("**/workspace", { timeout: 20_000 });
+  await page.getByText("Welcome back", { exact: true })
+    .waitFor({ state: "visible", timeout: 20_000 });
+  await page.getByText("Care for Recovered care recipient", { exact: true })
+    .waitFor({ state: "visible", timeout: 10_000 });
+  assert.deepEqual(pageErrors, [], `account restoration must not throw browser errors: ${JSON.stringify(pageErrors)}`);
+  await context.close();
+});
+
 // 0. First-time caregiver: focused welcome, first capture, durable save, then returning record.
 const firstVisitSession = await newSession("first visit capture");
 const firstVisitConsent = await request("/api/v1/consent", {
