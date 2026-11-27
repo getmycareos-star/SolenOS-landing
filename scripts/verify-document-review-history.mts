@@ -77,8 +77,8 @@ assert(
 );
 assert(
   source.includes("candidateNeedsRewrite") &&
-  source.includes("disabled={busy !== null || candidateNeedsRewrite}") &&
-  source.includes("disabled={busy !== null || !hasCorrectionSubject}") &&
+  source.includes("disabled={busy !== null || candidateNeedsRewrite || sourcePageUnresolved}") &&
+  source.includes("disabled={busy !== null || !hasCorrectionSubject || sourcePageUnresolved}") &&
   source.includes("Check the original document and add a short label in plain words. The text SolenOS read will stay unchanged."),
   "an unreadable generated suggestion must be corrected using the preserved original wording before it can be accepted",
 );
