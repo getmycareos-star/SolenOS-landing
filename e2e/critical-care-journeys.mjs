@@ -301,6 +301,42 @@ await record("00a first-use orientation, optional recipient details and action-s
   await verifyMobile(page);
   assert.deepEqual(pageErrors, [], `first-use orientation and consent boundaries must not throw browser errors: ${JSON.stringify(pageErrors)}`);
   await context.close();
+
+  // A separate first-time caregiver chooses to save the optional recipient
+  // details. Verify the server-persisted profile, then verify a fresh render
+  // restores the completed orientation and the saved recipient name.
+  const detailsSessionResponse = await request("/api/v1/sessions/anonymous", {
+    method: "POST",
+    body: { caregiver_name: "Optional-details caregiver" },
+  });
+  assert.equal(detailsSessionResponse.status, 201, JSON.stringify(detailsSessionResponse.payload));
+  const detailsSession = detailsSessionResponse.payload;
+  const detailsBrowser = await createBrowserPage(
+    detailsSession,
+    "/workspace",
+    { width: 390, height: 844 },
+  );
+  await detailsBrowser.page.getByRole("heading", { name: "Today", exact: true })
+    .waitFor({ state: "visible", timeout: 20_000 });
+  await detailsBrowser.page.locator("#first-use-recipient-name").fill("Margaret Example");
+  await detailsBrowser.page.locator("#first-use-relationship").fill("Daughter");
+  await detailsBrowser.page.getByRole("button", { name: "Continue to Today", exact: true }).click();
+  await detailsBrowser.page.getByText("Welcome back", { exact: true })
+    .waitFor({ state: "visible", timeout: 20_000 });
+  const savedOptionalProfile = await request("/api/v1/care-profile", {
+    token: detailsSession.access_token,
+  });
+  assert.equal(savedOptionalProfile.status, 200, JSON.stringify(savedOptionalProfile.payload));
+  assert.equal(savedOptionalProfile.payload.name, "Margaret Example",
+    "optional recipient name must be saved to the caregiver's persisted care profile");
+  assert.equal(savedOptionalProfile.payload.relationship, "Daughter",
+    "optional caregiver relationship must be saved to the caregiver's persisted care profile");
+  await detailsBrowser.page.reload({ waitUntil: "domcontentloaded" });
+  await detailsBrowser.page.getByRole("heading", { name: "Care for Margaret Example.", exact: true })
+    .waitFor({ state: "visible", timeout: 20_000 });
+  assert.deepEqual(detailsBrowser.pageErrors, [],
+    "saving optional first-use details and restoring the returning-caregiver view must not throw browser errors");
+  await detailsBrowser.context.close();
 });
 // Run the Companion schema preflight after the onboarding-specific browser acceptance,
 // so an unrelated API schema failure cannot prevent the first-use journey from executing.
