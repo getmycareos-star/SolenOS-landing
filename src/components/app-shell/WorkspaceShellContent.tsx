@@ -126,6 +126,13 @@ function WorkspaceEntryGate({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!entryReady) return;
     void loadConsent();
+    const refreshForIdentityChange = () => {
+      // Re-check consent whenever the active server-bound caregiver identity changes.
+      setConsentState("loading");
+      void loadConsent();
+    };
+    window.addEventListener("personIdChanged", refreshForIdentityChange);
+    return () => window.removeEventListener("personIdChanged", refreshForIdentityChange);
   }, [entryReady, loadConsent]);
 
   if (!entryReady || consentState === "loading") {
