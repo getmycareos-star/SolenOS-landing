@@ -178,14 +178,14 @@ const appointmentWorkflow = fs.readFileSync(path.join(root, "src/components/work
 assert.ok(appointmentWorkflow.includes("guided-appointment") && !appointmentWorkflow.includes("<style jsx>"), "appointment workflow must use the shared design system");
 assert.doesNotMatch(appointmentWorkflow, /style=\{\{/, "appointment briefing layout must not use inline styles");
 assert.ok(v2Styles.includes(".guided-full-span"), "appointment briefing must use the shared full-span layout utility");
-console.log("Appointment style contract diagnostics:", {
-  cwd: process.cwd(),
-  styleLength: v2Styles.length,
-  guidedAppointment: v2Styles.includes(".guided-appointment"),
-  guidedPanel: v2Styles.includes(".guided-panel"),
-  guidedCaptureTextarea: v2Styles.includes(".guided-capture-label textarea"),
-});
-assert.ok(v2Styles.includes(".guided-appointment") && v2Styles.includes(".guided-panel") && v2Styles.includes(".guided-capture-label textarea"), "appointment workflow surfaces must be styled centrally");
+const missingAppointmentSelectors = [
+  ".guided-appointment",
+  ".guided-panel",
+  ".guided-capture-label textarea",
+].filter((selector) => !v2Styles.includes(selector));
+if (missingAppointmentSelectors.length > 0) {
+  throw new Error("Appointment workflow styles are missing: " + missingAppointmentSelectors.join(", "));
+}
 assert.ok(dailyCapture.includes("var(--theme-success-bg)") && dailyCapture.includes("var(--theme-warning-bg)"));
 assert.doesNotMatch(documentsPage, /#(?:8eae8a|b9d5b5)|var\(--danger, #a22\)/i, "document actions and errors must use shared theme tokens");
 assert.ok(documentsPage.includes("var(--theme-action-bg)") && documentsPage.includes("var(--theme-error-fg)"));
