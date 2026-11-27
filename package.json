@@ -259,6 +259,7 @@
     "verify:open-loops-ui": "tsx scripts/verify-open-loops-ui.mts",
     "verify:history-drawer": "tsx scripts/verify-history-drawer.mts",
     "verify:companion-home": "tsx scripts/verify-companion-home.mts",
+    "verify:companion-recovery": "tsx scripts/verify-companion-recovery.mts",
     "verify:clarification-burden": "tsx scripts/verify-clarification-burden.mts",
     "verify:companion-emergency-signal": "tsx scripts/verify-companion-emergency-signal.mts",
     "verify:handoff-consent-gating": "tsx scripts/verify-handoff-consent-gating.mts",
