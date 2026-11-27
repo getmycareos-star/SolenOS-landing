@@ -377,6 +377,7 @@ function apiRequestTimeoutMs(input: RequestInfo | URL, method: string): number {
         ? input.toString()
         : input.url;
     const pathname = new URL(raw, "http://solenos.local").pathname;
+    if (pathname.endsWith("/sessions/revoke") && method === "POST") return 30_000;
     if (pathname.endsWith("/assistant/assist") && method === "POST") return 210_000;
     if (pathname.endsWith("/assistant/claim-extraction") && method === "POST") return 360_000;
     if (pathname.endsWith("/assistant/care-understanding") && method === "POST") return 210_000;
