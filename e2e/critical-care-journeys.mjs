@@ -377,7 +377,8 @@ await record("00b existing account restores the saved care record after browser 
   await page.waitForURL("**/workspace", { timeout: 20_000 });
   await page.getByText("Welcome back", { exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
-  await page.getByText("Care for Recovered care recipient", { exact: true })
+  await page.locator(".care-context-bar")
+    .getByText("Care for Recovered care recipient", { exact: true })
     .waitFor({ state: "visible", timeout: 10_000 });
   assert.deepEqual(pageErrors, [], `account restoration must not throw browser errors: ${JSON.stringify(pageErrors)}`);
   await context.close();
