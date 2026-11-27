@@ -185,6 +185,10 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
         // The first-use orientation is rendered inline on Today after the
         // authenticated profile and care-history state are available.
         const entered =
+          // A valid server-issued bearer token is durable evidence that this
+          // browser already has an authorized caregiver workspace. Do not let
+          // a cleared UI-only entry flag send that caregiver back to /start.
+          Boolean(existingToken) ||
           hasEnteredCareRecord() ||
           fromServer.length > 0 ||
           hasDurableServerReality ||
