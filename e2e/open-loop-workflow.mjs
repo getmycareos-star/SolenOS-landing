@@ -77,13 +77,31 @@ try {
     await route.fulfill({ response });
   });
 
-  await page.goto(new URL("/", frontend).toString(), { waitUntil: "domcontentloaded" });
-  await page.getByRole("link", { name: "Start Adding Care Information" }).first().click();
-  await page.waitForFunction(() => Boolean(
-    localStorage.getItem("solenos_anonymous_access_token") &&
-    localStorage.getItem("solenos_backend_person_id") &&
-    localStorage.getItem("solenos_backend_caregiver_id")
-  ), { timeout: 20_000 });
+  // This test isolates the Open Loop workflow. Seed a real server-issued
+  // caregiver session before navigation; first-use onboarding is verified by
+  // its own acceptance journey.
+  const sessionResponse = await fetch(new URL("/api/v1/sessions/anonymous", backend), {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ caregiver_name: "CI Open Loop caregiver" }),
+  });
+  assert.equal(sessionResponse.status, 201, await sessionResponse.text());
+  const seededSession = await sessionResponse.json();
+  assert.ok(seededSession.access_token && seededSession.person?.id && seededSession.caregiver?.id);
+
+  await page.addInitScript(({ accessToken, expiresAt, personId, caregiverId }) => {
+    localStorage.setItem("solenos_anonymous_access_token", accessToken);
+    localStorage.setItem("solenos_anonymous_session_expires_at", expiresAt);
+    localStorage.setItem("solenos_backend_person_id", personId);
+    localStorage.setItem("solenos_backend_caregiver_id", caregiverId);
+    localStorage.setItem("solenos_person_id", personId);
+  }, {
+    accessToken: seededSession.access_token,
+    expiresAt: seededSession.expires_at,
+    personId: seededSession.person.id,
+    caregiverId: seededSession.caregiver.id,
+  });
+
   await page.goto(new URL("/workspace/open-loops", frontend).toString(), { waitUntil: "domcontentloaded" });
   try {
     await page.waitForFunction(() =>
@@ -136,11 +154,11 @@ try {
     !followUpSectionPlacement.noLongerRelevantHasResolvedEmptyState,
     "Resolved and No longer relevant must be peer sections with their own empty messages",
   );
-  const session = await page.evaluate(() => ({
-    token: localStorage.getItem("solenos_anonymous_access_token"),
-    personId: localStorage.getItem("solenos_backend_person_id"),
-    caregiverId: localStorage.getItem("solenos_backend_caregiver_id"),
-  }));
+  const session = {
+    token: seededSession.access_token,
+    personId: seededSession.person.id,
+    caregiverId: seededSession.caregiver.id,
+  };
   assert.ok(session.token && session.personId && session.caregiverId, "a server-issued person-scoped caregiver session is required");
 
   const title = "CI E2E system-managed appointment follow-up";
