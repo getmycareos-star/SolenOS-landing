@@ -451,6 +451,7 @@ await record("01 first caregiver session", async () => {
 // and one durable care entry before opening Daily Care. The first-visit journey
 // above independently verifies the empty-record experience.
 let session = await newSession("critical journey matrix");
+const shareSession = session;
 const identity = auth(session);
 const matrixConsent = await request("/api/v1/consent", {
   token: identity.token,
