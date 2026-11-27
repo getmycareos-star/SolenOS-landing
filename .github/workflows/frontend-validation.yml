@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  statuses: write
 
 concurrency:
   # Keep validation for each exact main commit. A later push must not cancel
@@ -16,7 +17,25 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  validation-start:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish frontend runtime validation pending status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "frontend-runtime-main-validation",
+              description: "Next.js build, PostgreSQL-backed frontend contracts and browser workflows are running",
+              target_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            });
+
   build-and-test:
+    needs: validation-start:
     timeout-minutes: 45
     runs-on: ubuntu-24.04
     services:
@@ -202,3 +221,23 @@ jobs:
           if [ -f /tmp/solenos-backend-e2e.pid ]; then kill "$(cat /tmp/solenos-backend-e2e.pid)" 2>/dev/null || true; fi
           if [ -f /tmp/solenos-backend-e2e.log ]; then tail -n 120 /tmp/solenos-backend-e2e.log; fi
           if [ -f /tmp/solenos-frontend-e2e.log ]; then tail -n 120 /tmp/solenos-frontend-e2e.log; fi
+
+  publish-validation-status:
+    if: always()
+    needs: [build-and-test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish frontend runtime validation result
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const result = "${{ needs.build-and-test.result }}";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: result === "success" ? "success" : "failure",
+              context: "frontend-runtime-main-validation",
+              description: `frontend_runtime=${result}`,
+              target_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            });
