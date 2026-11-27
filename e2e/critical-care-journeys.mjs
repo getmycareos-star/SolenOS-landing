@@ -1600,7 +1600,17 @@ await record("01c workspace links, browser back, More menu and account form vali
   await accountSection.getByRole("button", { name: "I have saved the code", exact: true }).click();
 
   await accountSection.getByRole("button", { name: "Sign out", exact: true }).click();
-  await accountSection.getByText(/Signed out securely\. Your Care Record is still saved/).waitFor({ timeout: 30_000 });
+  await page.getByText("Signed out securely.", { exact: true }).waitFor({ timeout: 30_000 });
+  await accountSection.evaluate((element) => {
+    if (element instanceof HTMLDetailsElement && !element.open) element.open = true;
+  });
+  await accountSection.getByText(/Your Care Record is still saved/).waitFor({ timeout: 10_000 });
+  const signedOutState = await page.evaluate(() => ({
+    notice: sessionStorage.getItem("solenos_account_signed_out_notice"),
+    token: localStorage.getItem("solenos_anonymous_access_token"),
+  }));
+  assert.equal(signedOutState.notice, "1", "the sign-out confirmation must survive the workspace scope refresh");
+  assert.equal(signedOutState.token, null, "the revoked bearer token must be removed from this browser");
   await accountSection.getByRole("button", { name: "Sign in to an existing account", exact: true }).click();
   const authEmail = accountSection.locator("#account-email");
   const authForm = authEmail.locator("xpath=ancestor::form");
@@ -1610,7 +1620,17 @@ await record("01c workspace links, browser back, More menu and account form vali
   await accountSection.getByText("Signed in. Your existing Care Record is available.", { exact: true }).waitFor({ timeout: 20_000 });
 
   await accountSection.getByRole("button", { name: "Sign out", exact: true }).click();
-  await accountSection.getByText(/Signed out securely\. Your Care Record is still saved/).waitFor({ timeout: 30_000 });
+  await page.getByText("Signed out securely.", { exact: true }).waitFor({ timeout: 30_000 });
+  await accountSection.evaluate((element) => {
+    if (element instanceof HTMLDetailsElement && !element.open) element.open = true;
+  });
+  await accountSection.getByText(/Your Care Record is still saved/).waitFor({ timeout: 10_000 });
+  const signedOutState = await page.evaluate(() => ({
+    notice: sessionStorage.getItem("solenos_account_signed_out_notice"),
+    token: localStorage.getItem("solenos_anonymous_access_token"),
+  }));
+  assert.equal(signedOutState.notice, "1", "the sign-out confirmation must survive the workspace scope refresh");
+  assert.equal(signedOutState.token, null, "the revoked bearer token must be removed from this browser");
   const securitySection = page.locator("#settings-security");
   await securitySection.locator("summary").click();
   await page.locator("#identity-recovery-email").fill(accountEmail);
