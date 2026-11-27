@@ -11,6 +11,7 @@ import {
   caregiverSafeGeneratedText,
   caregiverSafeChangeText,
   caregiverSafeErrorMessage,
+  caregiverSafeApiErrorMessage,
   caregiverStatusLabel,
   caregiverSituationStateLabel,
   isTechnicalDiagnosticText,
@@ -1340,3 +1341,13 @@ assert.equal(caregiverSafeErrorMessage(new Error("Traceback: SQLAlchemy connecti
 assert.equal(caregiverSafeErrorMessage({ detail: "raw internal exception", status_code: 500 }), "SolenOS couldn’t complete that step. Check your connection and try again. If you were saving information, check whether it appears before trying again.");
 assert.equal(caregiverSafeErrorMessage({ user_message: "Please check the information and try again.", status_code: 422 }), "Please check the information and try again.");
 assert.equal(caregiverSafeErrorMessage({ user_message: "PostgreSQL transaction failed" }), "SolenOS couldn’t complete that step. Check your connection and try again. If you were saving information, check whether it appears before trying again.");
+
+assert.equal(caregiverSafeApiErrorMessage(401), "Your session has expired. Please sign in again.");
+assert.equal(caregiverSafeApiErrorMessage(403), "You don't have permission to view this information.");
+assert.equal(caregiverSafeApiErrorMessage(404), "We couldn't find that information.");
+assert.equal(caregiverSafeApiErrorMessage(409), "This information has changed. Refresh and review the latest details before trying again.");
+assert.equal(caregiverSafeApiErrorMessage(422), "Please check the information and try again.");
+assert.equal(caregiverSafeApiErrorMessage(503), "This service is temporarily unavailable. Please try again shortly.");
+assert.equal(caregiverSafeApiErrorMessage(500, { detail: "Traceback: PostgreSQL relation care_events missing" }), "We couldn't complete that request right now. Please try again.");
+assert.equal(caregiverSafeApiErrorMessage(422, { user_message: "Please enter a valid date." }), "Please enter a valid date.");
+assert.equal(caregiverSafeApiErrorMessage(422, { caregiver_message: "SQLAlchemy validation failed" }), "Please check the information and try again.");
