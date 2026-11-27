@@ -559,6 +559,36 @@ export function caregiverSafeChangeText(value: unknown): string | null {
   return containsInternalIdentifier || containsEngineLanguage ? null : text;
 }
 
-export function caregiverSafeErrorMessage(): string {
-  return "SolenOS couldn’t complete that step. Check your connection and try again. If you were saving information, check whether it appears before trying again.";
+const CAREGIVER_SAFE_ERROR_FALLBACK = "SolenOS couldn’t complete that step. Check your connection and try again. If you were saving information, check whether it appears before trying again.";
+
+/**
+ * Translate an API/client failure into caregiver-safe wording.
+ *
+ * The API contract and original error remain untouched for callers and
+ * diagnostics. Only a deliberately narrow, already-human-readable message may
+ * cross this presentation boundary; structured error objects and technical
+ * diagnostics always receive the neutral fallback.
+ */
+export function caregiverSafeErrorMessage(error?: unknown): string {
+  if (typeof error === "string") {
+    const safe = caregiverSafeGeneratedText(error);
+    return safe || CAREGIVER_SAFE_ERROR_FALLBACK;
+  }
+
+  if (error instanceof Error) {
+    const safe = caregiverSafeGeneratedText(error.message);
+    return safe || CAREGIVER_SAFE_ERROR_FALLBACK;
+  }
+
+  if (error && typeof error === "object" && !Array.isArray(error)) {
+    const candidate = error as Record<string, unknown>;
+    // Only accept an explicitly human-facing message field. Never stringify
+    // an API response object, status enum, nested detail payload, or identifier.
+    const message = candidate.user_message ?? candidate.caregiver_message;
+    if (typeof message === "string") {
+      return caregiverSafeGeneratedText(message) || CAREGIVER_SAFE_ERROR_FALLBACK;
+    }
+  }
+
+  return CAREGIVER_SAFE_ERROR_FALLBACK;
 }
