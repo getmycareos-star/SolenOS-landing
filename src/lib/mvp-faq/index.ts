@@ -479,12 +479,12 @@ export const CURRENT_CAPABILITIES = {
 } as const;
 
 export const GLOBAL_FEEDBACK_OPTIONS = [
-  "SolenOS misunderstood something",
-  "SolenOS missed important information",
-  "Response was confusing",
-  "Response was helpful",
-  "Something else",
+  "Something isn't working",
+  "Something is confusing",
+  "I have an idea",
+  "Something seems wrong with my care information",
+  "Other",
 ] as const;
 
-export const GLOBAL_FEEDBACK_PROMPT = "What did you notice?";
-export const GLOBAL_FEEDBACK_LABEL = "Help us improve SolenOS";
+export const GLOBAL_FEEDBACK_PROMPT = "What would you like us to know?";
+export const GLOBAL_FEEDBACK_LABEL = "Share feedback";
