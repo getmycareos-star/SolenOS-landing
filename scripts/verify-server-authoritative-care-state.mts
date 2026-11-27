@@ -7,6 +7,7 @@ const workspace = fs.readFileSync(path.join(root, "src/lib/workspace-context.tsx
 const apiClient = fs.readFileSync(path.join(root, "src/api/client.ts"), "utf8");
 const layout = fs.readFileSync(path.join(root, "src/app/workspace/layout.tsx"), "utf8");
 const shell = fs.readFileSync(path.join(root, "src/components/app-shell/WorkspaceShellContent.tsx"), "utf8");
+const firstUse = fs.readFileSync(path.join(root, "src/components/onboarding/FirstUseOrientation.tsx"), "utf8");
 const runtimeExports = fs.readFileSync(path.join(root, "src/lib/ui-runtime/index.ts"), "utf8");
 const situationStore = fs.readFileSync(path.join(root, "src/lib/ui-runtime/situation-store.ts"), "utf8");
 const timelineStore = fs.readFileSync(path.join(root, "src/lib/ui-runtime/timeline-store.ts"), "utf8");
@@ -53,7 +54,9 @@ assert.match(
   "an empty authorized server result must clear the visible projection",
 );
 assert.match(shell, /recordLoadError/);
-assert.match(shell, /window\.location\.reload\(\)/);
+assert.match(shell, /recordLoadError/, "the workspace shell must surface unavailable server-backed care state");
+assert.match(firstUse, /Reconnect to check your saved care history/, "first-use must explain when saved care history cannot be checked");
+assert.match(firstUse, /window\.location\.reload\(\)/, "first-use must provide a retry path for unavailable saved care history");
 assert.match(companion, /getJSON\('\/conversations\?limit=1'\)/);
 assert.match(companion, /listing\.person_id !== session\.person\.id/);
 assert.match(companion, /latest\.session_id/);
