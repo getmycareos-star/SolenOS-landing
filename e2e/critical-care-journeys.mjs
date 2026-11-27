@@ -2962,7 +2962,7 @@ await record("06 Companion context and Qwen output", async () => {
     (answer.payload.source_record_refs || []).map((item) => `${item.record_type}:${item.record_id}`),
   );
   for (const report of [
-    "Mum slept poorly last night and seemed more unsettled this morning.",
+    "Mum woke several times overnight and seemed more unsettled this morning.",
     "Mum barely touched her lunch today. She drank some water, though.",
     "Mum was calmer this evening. She ate a little more at dinner and is now resting.",
   ]) {
