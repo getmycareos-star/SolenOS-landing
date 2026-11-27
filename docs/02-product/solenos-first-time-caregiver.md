@@ -1,72 +1,60 @@
 # SolenOS Product Directive — First-Time Caregiver Experience
 
-**Status:** Permanent product behavior  
+**Status:** Current product behavior  
 **Authority:** Product Steward  
-**Decision:** **B** — Light orientation (1–2 calm sentences), then immediate capture  
-**Companions:** [`solenos-welcome-begin-continuity.md`](./solenos-welcome-begin-continuity.md) · Input Reality · Adoption / chaos-first
+**Decision:** One shared caregiver entry screen with an inline first-use orientation on Today.
 
----
+## Product rule
 
-## Why B (not A, not C)
+Onboarding is not a separate destination, wizard, dashboard, or modal. It is the first-use state of the existing caregiver entry experience at `/workspace` (Today).
 
-| Choice | Problem |
-|--------|---------|
-| **A** Empty calm capture | Feels like an empty text box — no mental model |
-| **C** Guided first note / examples | Teaches the app before value; feels like a form |
-| **B** Light orientation → capture | Purpose clear, then out of the way |
+First-time and returning caregivers use the same route, page structure, navigation, and Living Care Record. The first-use orientation is shown inline above Today content and can be dismissed without making a contribution. Returning caregivers see their existing care context and do not repeat the orientation.
 
----
+## First-use orientation
 
-## Decision B (locked)
+Show these sections in order:
 
-When a first-time caregiver presses "Begin," there is **no** existing Care Reality to restore.
+1. **Introduction** — “The care journey, remembered.” Explain that SolenOS keeps important care details together so caregivers can record what happens, save documents, understand changes, and prepare for conversations.
+2. **Early access** — Clearly state that SolenOS is still being tested. Some features may change or not work as expected. Invite feedback without promising individual responses or implying that early access reduces privacy or safety responsibilities.
+3. **Care recipient** — Offer recipient name and caregiver relationship as optional details. Do not require a medical questionnaire. Do not block access to Today when these details are skipped.
+4. **Ways to begin** — Link to Add a care update, Upload a document, and Ask SolenOS a question. These are optional starting points, never required steps.
+5. **Living Care Record explanation** — Explain that information comes from different sources, may be incomplete, uncertain, or conflicting, and that corrections preserve history. State that AI suggestions are not confirmed medical facts and SolenOS does not replace medical professionals.
+6. **Continue to Today** — A single clear primary action. The caregiver can contribute whenever ready.
 
-- Do **not** fabricate continuity  
-- Do **not** overwhelm with onboarding  
+## Returning caregivers
 
-Provide a **brief orientation** in one or two calm sentences that explains purpose, then **immediately invite capture**.
+Do not repeat the full orientation after completion. Continue to Today and show the existing care recipient and real saved care information. A compact Early Access notice and an optional feedback entry point may remain available.
 
-Example feel (not a fixed template):
+## Persistence and identity
 
-> Welcome.  
-> SolenOS helps you preserve and understand your loved one's care journey over time.  
-> Share anything that's happening—notes, messages, documents, photos, or voice recordings. We'll help organize what matters.  
->  
-> What's happening today?  
-> — or — Share what's on your mind.
+- Determine care history from the server-authorized record, not browser cache.
+- Persist first-use orientation completion on the existing authenticated caregiver identity.
+- Do not create a parallel onboarding table or recipient source of truth.
+- Recipient identity remains in the existing person/caregiver profile infrastructure.
+- A profile or history retrieval failure is not evidence that the caregiver is new.
+- Never create a recipient because a read request failed.
+- Do not claim completion until the server confirms the persisted state.
+- If the caregiver has existing care history, treat them as returning even if browser storage is empty.
 
----
+## Consent and trust
 
-## What they may share (immediately)
+Do not use a blanket checkbox or consent overlay to block entry to the Living Care Record. Terms and Privacy remain accessible. Preserve server-enforced, purpose-specific consent for sensitive operations and optional improvement feedback. Optional improvement consent must never be silently enabled or required to use SolenOS.
 
-Free text · observations · questions · worries · documents · scanned paperwork · photos · screenshots · voice notes (when channel exists) · messages · emails
+## Feedback
 
-**Never** require understanding categories before contributing.  
-**Never** force structured forms before value has been demonstrated.
+Make feedback easy to find during early access. Reuse the existing consent-gated feedback pathway and support email. Explain that in-app improvement feedback requires the caregiver's explicit optional improvement permission. Do not attach full care records, documents, or Companion conversations automatically.
 
----
+## Non-negotiable
 
-## One idea
+- One shared entry route.
+- No multi-step onboarding wizard.
+- No forced contribution.
+- No fake sample records.
+- No repeated recipient questions.
+- No medical questionnaire before access.
+- No local-only completion state.
+- No blanket consent wall.
+- No false success when persistence fails.
+- No caregiver-facing technical jargon.
 
-> "Give us the chaos. We'll help organize what matters."
-
-Feel: *"I can finally get this out of my head."* / *"I can put this somewhere and trust it will make sense later."*  
-Never: *"I need to learn another app."* / *"I have another system to maintain."*
-
-Retention is not proven by pain alone — see [solenos-mvp-research-validation.md](./solenos-mvp-research-validation.md).
-
----
-
-## After first successful capture
-
-**Do not explain SolenOS again.**
-
-From that point, **behavior teaches the product**. If the system consistently remembers, connects, and clarifies, caregivers understand SolenOS without repeated explanations.
-
-**Implementation:** `AddSituationPanel` shows light orientation only when `mode === "initial"` and there is no context root; update mode is a short capture invite only. Identity naming (`CareRecipientNameGate`) waits until after first value — never a pre-capture onboarding form.
-
----
-
-## MVP channels
-
-Orientation may mention documents/photos now; voice when ADR-018 allows. Do not block first capture waiting for every channel.
+The first-use experience succeeds when a caregiver understands the product, can identify where to begin, knows SolenOS is in early testing, and can enter Today without unnecessary work.
