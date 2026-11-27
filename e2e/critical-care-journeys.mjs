@@ -228,6 +228,86 @@ async function record(name, work) {
   process.stdout.write(`PASS ${name}\n`);
 }
 
+// 0a. A first-time caregiver must accept required consent before any workspace route,
+// then see the inline first-use orientation and be able to continue without contributing.
+const consentGateSession = await request("/api/v1/sessions/anonymous", {
+  method: "POST",
+  body: { caregiver_name: "First-use consent caregiver" },
+});
+assert.equal(consentGateSession.status, 201, JSON.stringify(consentGateSession.payload));
+const consentSession = consentGateSession.payload;
+await record("00a first-use consent gate and inline orientation", async () => {
+  const { context, page, pageErrors } = await createBrowserPage(
+    consentSession,
+    "/workspace",
+    { width: 390, height: 844 },
+  );
+  await page.getByRole("heading", { name: "Review how SolenOS handles care information." })
+    .waitFor({ state: "visible", timeout: 20_000 });
+  assert.equal(await page.getByRole("heading", { name: "Today", exact: true }).count(), 0,
+    "required consent must be resolved before rendering the caregiver workspace");
+  const consentCheckbox = page.locator(".early-access-consent-check input[type='checkbox']");
+  await consentCheckbox.check();
+  await page.getByRole("button", { name: "Agree and continue", exact: true }).click();
+  await page.getByRole("heading", { name: "Welcome to SolenOS", exact: true })
+    .waitFor({ state: "visible", timeout: 20_000 });
+  await page.getByText("Early access · We're testing SolenOS", { exact: true })
+    .waitFor({ state: "visible", timeout: 10_000 });
+  await page.getByRole("heading", { name: "Who is this care record for?" })
+    .waitFor({ state: "visible", timeout: 10_000 });
+  for (const label of ["Add a care update", "Upload a document", "Ask SolenOS a question"]) {
+    assert.equal(await page.getByRole("button", { name: new RegExp(label) }).isVisible(), true,
+      `first-use screen must expose ${label}`);
+  }
+  assert.equal(await page.locator("#first-use-recipient-name").getAttribute("required"), null,
+    "recipient name must not be a mandatory field");
+  assert.equal(await page.locator("#first-use-relationship").getAttribute("required"), null,
+    "relationship must remain optional");
+  await page.getByRole("button", { name: "Continue to Today", exact: true }).click();
+  await page.getByRole("heading", { name: "Today", exact: true })
+    .waitFor({ state: "visible", timeout: 20_000 });
+  await page.getByRole("heading", { name: "Welcome to SolenOS", exact: true })
+    .waitFor({ state: "hidden", timeout: 10_000 });
+
+  const persistedProfile = await request("/api/v1/care-profile", { token: consentSession.access_token });
+  assert.equal(persistedProfile.status, 200, JSON.stringify(persistedProfile.payload));
+  assert.ok(persistedProfile.payload.first_use_orientation_completed_at,
+    "Continue to Today must persist first-use completion on the caregiver identity");
+  assert.equal(persistedProfile.payload.name, "Care recipient",
+    "skipping recipient details must not invent a recipient name");
+  const consentStatus = await request(
+    `/api/v1/consent?person_id=${encodeURIComponent(consentSession.person.id)}`,
+    { token: consentSession.access_token },
+  );
+  assert.equal(consentStatus.status, 200, JSON.stringify(consentStatus.payload));
+  assert.equal(consentStatus.payload.verified, true);
+  assert.equal(consentStatus.payload.profile?.data_improvement_consent, false,
+    "required acknowledgement must not enable optional improvement feedback");
+
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "Welcome back" })
+    .waitFor({ state: "visible", timeout: 20_000 });
+  assert.equal(await page.getByRole("heading", { name: "Welcome to SolenOS", exact: true }).count(), 0,
+    "returning visit must not repeat the full first-use orientation");
+  await verifyMobile(page);
+  assert.deepEqual(pageErrors, [], `first-use consent and orientation must not throw browser errors: ${JSON.stringify(pageErrors)}`);
+  await context.close();
+
+  // Direct navigation to a different workspace route must encounter the same
+  // required-consent gate; it cannot bypass consent by skipping Today.
+  const secondGateResponse = await request("/api/v1/sessions/anonymous", {
+    method: "POST",
+    body: { caregiver_name: "Direct-route consent caregiver" },
+  });
+  assert.equal(secondGateResponse.status, 201, JSON.stringify(secondGateResponse.payload));
+  const secondGate = await createBrowserPage(secondGateResponse.payload, "/workspace/documents");
+  await secondGate.page.getByRole("heading", { name: "Review how SolenOS handles care information." })
+    .waitFor({ state: "visible", timeout: 20_000 });
+  assert.equal(await secondGate.page.getByRole("heading", { name: "Documents", exact: true }).count(), 0,
+    "direct navigation to Documents must not bypass required consent");
+  await secondGate.context.close();
+});
+
 // 0. First-time caregiver: focused welcome, first capture, durable save, then returning record.
 const firstVisitSession = await newSession("first visit capture");
 const firstVisitConsent = await request("/api/v1/consent", {
