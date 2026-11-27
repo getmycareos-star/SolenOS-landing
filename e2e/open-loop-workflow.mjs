@@ -7,9 +7,14 @@ const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage();
 const browserErrors = [];
 const failedRequests = [];
+const apiRequests = [];
 page.on("pageerror", (error) => browserErrors.push(error.message));
 page.on("console", (message) => {
   if (message.type() === "error") browserErrors.push(message.text());
+});
+page.on("request", (request) => {
+  const url = new URL(request.url());
+  if (url.pathname.startsWith("/api/")) apiRequests.push({ method: request.method(), path: url.pathname });
 });
 page.on("requestfailed", (request) => {
   const url = new URL(request.url());
@@ -78,10 +83,19 @@ try {
     localStorage.getItem("solenos_backend_person_id") &&
     localStorage.getItem("solenos_backend_caregiver_id")
   ), { timeout: 15_000 });
-  await page.waitForFunction(() =>
-    Boolean(document.querySelector(".followups-section") || document.querySelector(".followups-page [role='alert']")),
-    { timeout: 20_000 },
-  );
+  try {
+    await page.waitForFunction(() =>
+      Boolean(document.querySelector(".followups-section") || document.querySelector(".followups-page [role='alert']")),
+      { timeout: 20_000 },
+    );
+  } catch {
+    throw new Error("Open Loop page stayed in its initial loading state: " + JSON.stringify({
+      pageText: (await page.locator("body").innerText()).slice(0, 2500),
+      browserErrors: browserErrors.slice(-30),
+      apiRequests: apiRequests.slice(-30),
+      failedRequests: failedRequests.slice(-20),
+    }));
+  }
   if (await page.locator(".followups-section").count() === 0) {
     throw new Error("Open Loop page did not load its persisted sections: " + JSON.stringify({
       pageText: (await page.locator("body").innerText()).slice(0, 2500),
