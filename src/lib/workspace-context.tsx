@@ -33,6 +33,7 @@ export type WorkspaceContextValue = {
   language: string;
   hydrated: boolean;
   entryReady: boolean;
+  hasCareHistory: boolean;
   recordLoadError: string | null;
   opsMode: boolean;
   setOpsMode: (mode: boolean) => void;
@@ -73,6 +74,7 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
   const [language, setLanguage] = useState("en");
   const [hydrated, setHydrated] = useState(false);
   const [entryReady, setEntryReady] = useState(false);
+  const [hasCareHistory, setHasCareHistory] = useState(false);
   const [recordLoadError, setRecordLoadError] = useState<string | null>(null);
   const [opsMode, setOpsMode] = useState(false);
   const scopeRefreshVersionRef = useRef(0);
@@ -166,6 +168,7 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
           data?.has_context_root === true ||
           (data?.total_events ?? 0) > 0 ||
           Boolean(data?.active_care_situation?.observations?.length);
+        setHasCareHistory(hasDurableServerReality);
 
         if (fromServer.length > 0 || hasDurableServerReality) {
           markEnteredCareRecord();
@@ -240,6 +243,7 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
         data?.has_context_root === true ||
         (data?.total_events ?? 0) > 0 ||
         Boolean(data?.active_care_situation?.observations?.length);
+      setHasCareHistory(hasDurableServerReality);
       setRuntime((prev) => ({
         ...prev,
         situations: fromServer,
@@ -277,6 +281,7 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
       response?: SituationApiContinuityPayload;
     }) => {
       markEnteredCareRecord();
+      setHasCareHistory(true);
       window.localStorage.setItem(DURABLE_CARE_KEY_STORAGE, payload.careKey);
       if (!window.localStorage.getItem(CARE_SESSION_STORAGE_KEY)?.startsWith("sess_")) {
         window.localStorage.setItem(
@@ -357,6 +362,7 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
       language,
       hydrated,
       entryReady,
+      hasCareHistory,
       recordLoadError,
       opsMode,
       setOpsMode,
@@ -364,7 +370,7 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
       handleSituationComplete,
       handlePauseActive,
     }),
-    [runtime, careKey, sessionId, telemetryUserId, language, hydrated, entryReady, recordLoadError, opsMode, updateRuntime, handleSituationComplete, handlePauseActive],
+    [runtime, careKey, sessionId, telemetryUserId, language, hydrated, entryReady, hasCareHistory, recordLoadError, opsMode, updateRuntime, handleSituationComplete, handlePauseActive],
   );
 
   return (
