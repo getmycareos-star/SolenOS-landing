@@ -18,8 +18,8 @@ assert.doesNotMatch(layout, /type="checkbox"|ResearchPreviewAckGate|EarlyAccessC
   "no acknowledgement checkbox may gate workspace routes");
 assert.doesNotMatch(companionHome, /ResearchPreviewAckGate/,
   "the AI Companion home must not mount an early-version acknowledgement gate");
-assert.match(legacyRecordRoute, /redirect\("\/workspace"\)/,
-  "the legacy LCR route redirects to the AI Companion home");
+assert.match(legacyRecordRoute, /preserveLegacySearchParams\("\/workspace\/care-continuity"/,
+  "the legacy LCR route preserves its destination at the current Care Record workspace");
 assert.doesNotMatch(legacyRecordRoute, /ResearchPreviewAckGate|ConsentGatePanel|Living Care Record/,
   "the old LCR page is not rendered or used as a workspace destination");
 assert.match(workspacePage, /Your Care Record/,
