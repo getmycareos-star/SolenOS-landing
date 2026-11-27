@@ -151,7 +151,9 @@ requireText("src/api/client.ts", [
   'pathname.endsWith("/handoff-drafts/prepare") && method === "POST") return 210_000',
   "export class ApiResponseError extends Error",
   "throw new ApiResponseError(res.status, message, detail)",
-  "typeof detailMessage === 'string'",
+  "const message = caregiverSafeApiErrorMessage(res.status, explicitCaregiverMessage)",
+  "detail = err.detail ?? null",
+  "never copy raw API detail or provider text into Error.message",
 ]);
 requireText("src/components/workflows/AICompanion.tsx", [
   "matched_validated_aggregate",
