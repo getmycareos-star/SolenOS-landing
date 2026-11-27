@@ -16,7 +16,8 @@ type Props = {
 };
 
 /**
- * Always-available improvement signal — not only after AI responses.
+ * Optional improvement feedback. In-app submission is gated by explicit
+ * data-improvement consent and never attaches the caregiver's full record.
  */
 export function HelpImproveSolenos({ compact }: Props) {
   const [open, setOpen] = useState(false);
@@ -104,6 +105,7 @@ export function HelpImproveSolenos({ compact }: Props) {
   return (
     <div className="help-improve-panel" aria-label={GLOBAL_FEEDBACK_LABEL}>
       <p className="workspace-lede">{GLOBAL_FEEDBACK_PROMPT}</p>
+      <p className="panel-muted">In-app feedback is stored only when you have enabled optional improvement feedback in Privacy settings. You can also email us directly without enabling that setting.</p>
       <ul className="research-feedback-options">
         {GLOBAL_FEEDBACK_OPTIONS.map((opt) => (
           <li key={opt}>
