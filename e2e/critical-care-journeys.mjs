@@ -266,7 +266,7 @@ await record("00a first-use consent gate and inline orientation", async () => {
   await page.getByRole("button", { name: "Continue to Today", exact: true }).click();
   await page.getByRole("heading", { name: "Today", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
-  await page.getByRole("heading", { name: "Welcome to SolenOS", exact: true })
+  await page.getByText("Welcome to SolenOS", { exact: true })
     .waitFor({ state: "hidden", timeout: 10_000 });
 
   const persistedProfile = await request("/api/v1/care-profile", { token: consentSession.access_token });
