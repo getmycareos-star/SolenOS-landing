@@ -127,7 +127,14 @@ async function main() {
     assert.ok(init?.signal instanceof AbortSignal, "write requests must have a timeout signal");
     return response({ detail: "temporary unavailable" }, 503);
   }) as typeof fetch;
-  await assert.rejects(postJSON("/daily/log", { note: "write once" }), /temporary unavailable/);
+  await assert.rejects(postJSON("/daily/log", { note: "write once" }), (error: unknown) => {
+    assert.ok(error instanceof Error);
+    assert.match(error.message, /temporarily unavailable/i,
+      "caregiver-facing exception messages must use safe status-based wording");
+    assert.equal((error as { detail?: unknown }).detail, "temporary unavailable",
+      "raw API detail remains available only as a structured diagnostic for narrow programmatic handling");
+    return true;
+  });
   assert.equal(writes, 1, "mutations must never be retried automatically");
 
   let idempotencyHeader = "";
