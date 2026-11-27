@@ -1208,7 +1208,7 @@ await record("01c workspace links, browser back, More menu and account form vali
     "the exported briefing must identify the LCR as its source");
   assert.match(summaryText, /Words from your saved note or document:/,
     "the exported briefing must preserve supporting LCR wording");
-  assert.match(summaryText, /Caregiver reports that Mum slept poorly last night and seemed unsettled this morning/,
+  assert.match(summaryText, /Mum slept poorly last night and seemed more unsettled this morning/,
     "structured care notes must export as the original caregiver observation");
   assert.doesNotMatch(summaryText, /capture_idempotency_key|capture_request_fingerprint|critical_care_journey_share_seed|test-fingerprint/,
     "exported briefings must not expose capture identifiers or internal source metadata");
