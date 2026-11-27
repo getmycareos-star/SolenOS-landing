@@ -712,7 +712,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     const submittedText = (textOverride ?? input).trim()
     // React state updates are asynchronous. A ref closes the same-tick
     // double-submit window before the loading state reaches the next render.
-    if (!submittedText || loading || loadingOlderMessages || loadingConversationHistory || sendingRef.current) return
+    if (sendingRef.current) return
+    if (!submittedText || loading || loadingOlderMessages || loadingConversationHistory) return
     sendingRef.current = true
     const requestScopeSequence = conversationScopeSequenceRef.current
     const initialScopeKey = activeCompanionConversationStorageKey()
@@ -889,7 +890,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       )
     } finally {
       sendingRef.current = false
-      if (isCurrentScopeRequest()) setLoading(false)
+      if (isCurrentScopeRequest()) {
+        setLoading(false)
+      }
     }
   }
 
