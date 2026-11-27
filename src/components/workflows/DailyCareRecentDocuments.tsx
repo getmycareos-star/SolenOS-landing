@@ -105,6 +105,7 @@ export default function DailyCareRecentDocuments() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const requestSequence = useRef(0);
+  const loadedScope = useRef<{ personId: string; caregiverId: string } | null>(null);
 
   const load = useCallback(async () => {
     const sequence = ++requestSequence.current;
@@ -112,6 +113,16 @@ export default function DailyCareRecentDocuments() {
     setError("");
     try {
       const session = await ensureAnonymousSession();
+      const nextScope = { personId: session.person.id, caregiverId: session.caregiver.id };
+      if (loadedScope.current && (
+        loadedScope.current.personId !== nextScope.personId
+        || loadedScope.current.caregiverId !== nextScope.caregiverId
+      )) {
+        setDocuments([]);
+        setAnalyses([]);
+        setJobs([]);
+      }
+      loadedScope.current = nextScope;
       const [evidenceResponse, intelligenceResponse] = await Promise.all([
         getJSON("/evidence/" + encodeURIComponent(session.person.id)),
         getJSON("/documents/intelligence?limit=10"),
@@ -142,7 +153,14 @@ export default function DailyCareRecentDocuments() {
 
   useEffect(() => {
     void load();
-    const refreshForPersonChange = () => void load();
+    const refreshForPersonChange = () => {
+      requestSequence.current += 1;
+      loadedScope.current = null;
+      setDocuments([]);
+      setAnalyses([]);
+      setJobs([]);
+      void load();
+    };
     window.addEventListener("personIdChanged", refreshForPersonChange);
     return () => {
       requestSequence.current += 1;
