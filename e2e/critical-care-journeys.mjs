@@ -295,11 +295,19 @@ await record("00a first-use orientation, optional recipient details and action-s
 
   // Direct route navigation remains available; protected writes are enforced
   // by their own server-side consent checks rather than a blanket route gate.
+  await page.goto(new URL("/workspace/daily-care", frontend).toString(), { waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "Add an update", exact: true })
+    .waitFor({ state: "visible", timeout: 20_000 });
+  await verifyMobile(page);
   await page.goto(new URL("/workspace/documents", frontend).toString(), { waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "Documents", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
   await verifyMobile(page);
-  assert.deepEqual(pageErrors, [], `first-use orientation and consent boundaries must not throw browser errors: ${JSON.stringify(pageErrors)}`);
+  await page.goto(new URL("/workspace/companion", frontend).toString(), { waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "Ask SolenOS", exact: true })
+    .waitFor({ state: "visible", timeout: 20_000 });
+  await verifyMobile(page);
+  assert.deepEqual(pageErrors, [], `first-use orientation and direct workspace destinations must not throw browser errors: ${JSON.stringify(pageErrors)}`);
   await context.close();
 
   // A separate first-time caregiver chooses to save the optional recipient
@@ -1179,7 +1187,12 @@ await record("01c workspace links, browser back, More menu and account form vali
     daily_care_sources: appointmentDraft.source_references
       .filter((source) => source.source_type === "daily_care_observation")
       .map((source) => ({ source_table: source.source_table, source_id: source.source_id, text_preview: source.text?.slice(0, 180) })),
-    generated_source_refs: appointmentDraft.generation?.sections?.map((section) => section.source_ref),
+    expected_daily_event_ids: Object.values(dailyScenarioEventIdsByReport),
+    generated_source_refs: appointmentDraft.generation?.sections?.map((section) => ({
+      source_ref: section.source_ref,
+      summary: section.summary,
+      supporting_quote: section.supporting_quote,
+    })),
   }));
   const appointmentClaimReview = exportDialog.getByRole("checkbox", { name: /I checked “.*” against its saved source wording, dates and what is still unclear/ });
   const appointmentClaimReviewCount = await appointmentClaimReview.count();
@@ -2361,6 +2374,9 @@ await record("Daily Care saves and retrieves original reports without relying on
   assert.equal(scenarioEvents.length, 4, "all four original caregiver reports must remain independently retrievable");
   assert.equal(new Set(scenarioEvents.map((row) => row.id)).size, 4, "each report must have its own persisted event");
   assert.ok(scenarioEvents.every((row) => Array.isArray(row.evidence_ids) && row.evidence_ids.length === 1));
+  console.log("DAILY_CARE_EVENT_TIMESTAMPS", JSON.stringify(scenarioEvents.map(row => ({
+    id: row.id, event_type: row.event_type, occurred_at: row.occurred_at, recorded_at: row.recorded_at,
+  }))));
   dailyScenarioEventIdsByReport = Object.fromEntries(scenarioReports.map((report) => {
     const event = scenarioEvents.find((row) => JSON.stringify(row).includes(report));
     assert.ok(event, `missing persisted event for source report: ${report}`);
