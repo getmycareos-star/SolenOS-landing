@@ -13,7 +13,7 @@ const results = [];
 let dailyScenarioEventIdsByReport = {};
 let dailyScenarioEvidenceIdsByReport = {};
 const scenarioReports = [
-  "Mum slept poorly last night and seemed more unsettled this morning.",
+  "Mum woke several times overnight and seemed more unsettled this morning.",
   "Mum barely touched her lunch today. She drank some water, though.",
   "I think the doctor changed Mum's medication yesterday, but I can't remember the new dose.",
   "Mum was calmer this evening. She ate a little more at dinner and is now resting.",
@@ -693,7 +693,7 @@ const matrixSeed = await request("/api/v1/daily-care/entries", {
     caregiver_id: identity.caregiverId,
     capture_idempotency_key: randomUUID(),
     capture_kind: "natural_language_update",
-    notes: "A saved care update for the returning caregiver journey checks.",
+    notes: "Mum slept poorly last night and seemed more unsettled this morning.",
   },
 });
 assert.equal(matrixSeed.status, 200, JSON.stringify(matrixSeed.payload));
@@ -1187,7 +1187,6 @@ await record("01c workspace links, browser back, More menu and account form vali
     daily_care_sources: appointmentDraft.source_references
       .filter((source) => source.source_type === "daily_care_observation")
       .map((source) => ({ source_table: source.source_table, source_id: source.source_id, text_preview: source.text?.slice(0, 180) })),
-    expected_daily_event_ids: Object.values(dailyScenarioEventIdsByReport),
     generated_source_refs: appointmentDraft.generation?.sections?.map((section) => ({
       source_ref: section.source_ref,
       summary: section.summary,
