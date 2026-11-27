@@ -768,7 +768,11 @@ await record("01b mobile navigation leads to Care information and Needs attentio
   await mobileNav.getByRole("link", { name: "Care", exact: true }).click();
   await page.waitForURL("**/workspace/care-continuity", { timeout: 15_000 });
   await page.getByRole("heading", { name: "Care information", exact: true }).waitFor({ timeout: 15_000 });
-  await page.getByRole("link", { name: "Needs attention", exact: true }).click();
+  const needsAttentionLink = page.getByRole("link", { name: "Needs attention", exact: true });
+  await needsAttentionLink.waitFor({ state: "visible", timeout: 10_000 });
+  assert.equal(await needsAttentionLink.getAttribute("aria-describedby"), "care-information-follow-ups-description",
+    "Care information links must expose their descriptions separately from their concise accessible names");
+  await needsAttentionLink.click();
   await page.waitForURL("**/workspace/open-loops", { timeout: 15_000 });
   await page.locator(".followups-page h1").getByText("Needs attention", { exact: true })
     .waitFor({ state: "visible", timeout: 15_000 });
