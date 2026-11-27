@@ -134,7 +134,23 @@ try {
   await page.waitForURL(/\/workspace\/care-continuity(?:\?|$)/);
   const documentsLink = page.locator(".care-information-directory")
     .getByRole("link", { name: "Documents", exact: true });
-  await documentsLink.waitFor({ state: "visible" });
+  try {
+    await page.getByRole("heading", { name: "Explore care information", exact: true })
+      .waitFor({ state: "visible", timeout: 30_000 });
+    await documentsLink.waitFor({ state: "visible", timeout: 10_000 });
+  } catch (error) {
+    const diagnostics = await page.evaluate(() => ({
+      url: location.href,
+      title: document.title,
+      headings: [...document.querySelectorAll("h1,h2,h3")].map((node) => node.textContent?.trim()).filter(Boolean),
+      visibleText: document.body.innerText.slice(0, 2500),
+      workspaceRoot: Boolean(document.querySelector(".solenos-chat-app")),
+      directoryExists: Boolean(document.querySelector(".care-information-directory")),
+      archivedFlag: localStorage.getItem("solenos_workspace_archived"),
+    }));
+    await page.screenshot({ path: "/tmp/solenos-care-information-navigation-failure.png", fullPage: true });
+    throw new Error(`Care information directory did not become visible: ${JSON.stringify(diagnostics)}; ${String(error)}`);
+  }
   const routeStartedAt = Date.now();
   await documentsLink.click();
   await page.waitForURL(/\/workspace\/documents(?:\?|$)/);
