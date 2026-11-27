@@ -188,7 +188,7 @@ if (missingAppointmentSelectors.length > 0) {
 }
 assert.ok(dailyCapture.includes("var(--theme-success-bg)") && dailyCapture.includes("var(--theme-warning-bg)"));
 assert.doesNotMatch(documentsPage, /#(?:8eae8a|b9d5b5)|var\(--danger, #a22\)/i, "document actions and errors must use shared theme tokens");
-assert.ok(documentsPage.includes("var(--theme-action-bg)") && documentsPage.includes("var(--theme-error-fg)"));
+assert.ok(documentsPage.includes("var(--theme-action-bg)") && documentsPage.includes("cameraError") && themeOverrides.includes("--theme-error-fg"), "Documents uses shared action styling and the global theme defines an accessible error color");
 // Appointment styles are governed by semantic theme tokens; assert the required tokens above.
 const careRecordOverview = fs.readFileSync(path.join(root, "src/components/app-shell/CareRecordOverview.tsx"), "utf8");
 const timelinePage = fs.readFileSync(path.join(root, "src/app/workspace/timeline/page.tsx"), "utf8");
