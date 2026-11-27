@@ -41,6 +41,7 @@ function WorkspaceHomeInner() {
         <h1>Today</h1>
         <p>See what is happening today, what has changed and what may need your attention. Your saved care information stays connected as things change.</p>
         <p><Link href="/workspace/care-continuity">View care information</Link></p>
+        <p><Link href="/workspace/daily-care">Add a care update</Link></p>
       </header>
       <LCRCurrentUnderstanding showNextStep viewMode="today" />
       <UpcomingAppointmentSummary />
