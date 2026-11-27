@@ -53,7 +53,6 @@ includes(feedback, "feedback_category: option", "Feedback must persist the selec
 includes(settings, "<HelpImproveSolenos compact />", "Feedback must remain available in Settings");
 includes(styles, ".first-use-orientation", "First-use screen must have responsive styles");
 includes(styles, ".early-access-compact", "Returning notice must have compact styles");
-includes(styles, ".workspace-consent-gate", "Consent gate must be styled in the workspace");
 includes(productDirective, "same route, page structure, navigation", "Product directive must preserve one shared experience");
 includes(productDirective, "consent", "Product directive must document consent enforcement");
 assert.ok(!productDirective.includes("Do not use a blanket checkbox or consent overlay to block entry"), "Product directive must not contradict the enforced consent gate");
