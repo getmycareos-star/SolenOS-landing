@@ -63,7 +63,7 @@ try {
   });
 
   await page.goto(new URL("/workspace/open-loops", frontend).toString(), { waitUntil: "domcontentloaded" });
-  await page.getByRole("heading", { name: "Needs attention", exact: true }).waitFor();
+  await page.getByRole("heading", { name: "Needs attention now", exact: true }).waitFor();
   await page.getByRole("heading", { name: "Resolved", exact: true }).waitFor({ timeout: 20_000 });
   await page.getByRole("heading", { name: "No longer relevant", exact: true }).waitFor({ timeout: 20_000 });
   assert.equal(await page.locator(".followups-section .followups-section").count(), 0, "Open Loop history sections must not be nested inside each other");
