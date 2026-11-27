@@ -182,6 +182,10 @@ function pendingCompanionTurnStorageKey(personId: string, caregiverId: string): 
   return `solenos_companion_pending_turn:${encodeURIComponent(personId)}:${encodeURIComponent(caregiverId)}`
 }
 
+function pendingCompanionBootstrapStorageKey(): string {
+  return 'solenos_companion_pending_turn:bootstrap'
+}
+
 function activeCompanionConversationStorageKey(): string | null {
   if (typeof window === 'undefined') return null
   const personId = window.localStorage.getItem('solenos_backend_person_id')
@@ -344,27 +348,36 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       try {
         const cachedPersonId = window.localStorage.getItem('solenos_backend_person_id')
         const cachedCaregiverId = window.localStorage.getItem('solenos_backend_caregiver_id')
-        if (cachedPersonId && cachedCaregiverId) {
-          const pendingKey = pendingCompanionTurnStorageKey(cachedPersonId, cachedCaregiverId)
-          const pendingRaw = window.sessionStorage.getItem(pendingKey)
-          if (pendingRaw) {
-            const pending = JSON.parse(pendingRaw) as { client_turn_id?: unknown; text?: unknown }
-            if (
-              typeof pending.client_turn_id === 'string'
-              && pending.client_turn_id.length > 0
-              && pending.client_turn_id.length <= 36
-              && typeof pending.text === 'string'
-              && pending.text.trim().length > 0
-              && pending.text.length <= 4000
-            ) {
-              pendingTurnId.current = pending.client_turn_id
-              pendingTurnText.current = pending.text
-              setInput(pending.text)
-              setRequestError('Your last message may not have received a response. We kept it on this device. Restore access to the same care record before retrying.')
-              recoveredPendingDraft = true
-            } else {
-              window.sessionStorage.removeItem(pendingKey)
+        const scopedPendingKey = cachedPersonId && cachedCaregiverId
+          ? pendingCompanionTurnStorageKey(cachedPersonId, cachedCaregiverId)
+          : null
+        const bootstrapPendingKey = pendingCompanionBootstrapStorageKey()
+        const pendingKey = scopedPendingKey
+          && window.sessionStorage.getItem(scopedPendingKey)
+          ? scopedPendingKey
+          : bootstrapPendingKey
+        const pendingRaw = window.sessionStorage.getItem(pendingKey)
+        if (pendingRaw) {
+          const pending = JSON.parse(pendingRaw) as { client_turn_id?: unknown; text?: unknown }
+          if (
+            typeof pending.client_turn_id === 'string'
+            && pending.client_turn_id.length > 0
+            && pending.client_turn_id.length <= 36
+            && typeof pending.text === 'string'
+            && pending.text.trim().length > 0
+            && pending.text.length <= 4000
+          ) {
+            pendingTurnId.current = pending.client_turn_id
+            pendingTurnText.current = pending.text
+            setInput(pending.text)
+            setRequestError('Your last message may not have received a response. We kept it on this device. Restore access to the same care record before retrying.')
+            recoveredPendingDraft = true
+            if (scopedPendingKey && pendingKey === bootstrapPendingKey) {
+              window.sessionStorage.setItem(scopedPendingKey, pendingRaw)
+              window.sessionStorage.removeItem(bootstrapPendingKey)
             }
+          } else {
+            window.sessionStorage.removeItem(pendingKey)
           }
         }
       } catch {
@@ -718,13 +731,13 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     try {
       const personId = window.localStorage.getItem('solenos_backend_person_id')
       const caregiverId = window.localStorage.getItem('solenos_backend_caregiver_id')
-      if (personId && caregiverId) {
-        pendingStorageKey = pendingCompanionTurnStorageKey(personId, caregiverId)
-        window.sessionStorage.setItem(
-          pendingStorageKey,
-          JSON.stringify({ client_turn_id: clientTurnId, text: submittedText }),
-        )
-      }
+      pendingStorageKey = personId && caregiverId
+        ? pendingCompanionTurnStorageKey(personId, caregiverId)
+        : pendingCompanionBootstrapStorageKey()
+      window.sessionStorage.setItem(
+        pendingStorageKey,
+        JSON.stringify({ client_turn_id: clientTurnId, text: submittedText }),
+      )
     } catch {
       // Continue in memory when browser storage is unavailable.
     }
@@ -753,16 +766,21 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       // If this is the first session on this tab and no caregiver scope was
       // cached before bootstrap, persist the draft as soon as the server
       // establishes the authoritative person/caregiver scope.
-      if (!pendingStorageKey) {
-        pendingStorageKey = pendingCompanionTurnStorageKey(session.person.id, session.caregiver.id)
+      const recipientPendingKey = pendingCompanionTurnStorageKey(session.person.id, session.caregiver.id)
+      if (pendingStorageKey !== recipientPendingKey) {
         try {
+          const pendingRaw = pendingStorageKey
+            ? window.sessionStorage.getItem(pendingStorageKey)
+            : null
           window.sessionStorage.setItem(
-            pendingStorageKey,
-            JSON.stringify({ client_turn_id: clientTurnId, text: submittedText }),
+            recipientPendingKey,
+            pendingRaw || JSON.stringify({ client_turn_id: clientTurnId, text: submittedText }),
           )
+          if (pendingStorageKey) window.sessionStorage.removeItem(pendingStorageKey)
         } catch {
           // In-memory retry remains available when browser session storage is unavailable.
         }
+        pendingStorageKey = recipientPendingKey
       }
       // Every Companion turn, including greetings and thanks, uses the same
       // authenticated conversation pipeline so it can restore prior turns,
@@ -788,6 +806,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       pendingTurnText.current = null
       try {
         window.sessionStorage.removeItem(pendingCompanionTurnStorageKey(session.person.id, session.caregiver.id))
+        window.sessionStorage.removeItem(pendingCompanionBootstrapStorageKey())
       } catch {
         // A stale recovery draft is harmless; the server remains authoritative.
       }
