@@ -295,7 +295,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
         return;
       }
       case "delete": {
-        if (!window.confirm("Clear this device? This removes local session and workspace data, including unsent updates stored only in this browser. Those unsent updates have not reached SolenOS and will be deleted from this device. An update already being sent may still reach SolenOS. This does not delete care information already saved there. Continue?")) return;
+        if (!window.confirm("Clear this device? This removes local session and workspace data, including unsent updates stored only in this browser. Those unsent updates have not reached SolenOS and will be deleted from this device. An update already being sent may still reach SolenOS. It does not delete care information already saved in SolenOS. Continue?")) return;
         let accessRevoked = false;
         let offlineQueueCleared = false;
         try {
