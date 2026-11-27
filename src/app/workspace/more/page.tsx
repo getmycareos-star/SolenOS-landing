@@ -13,7 +13,7 @@ export default function WorkspaceMorePage() {
         {WORKSPACE_SECONDARY_NAVIGATION.map((item) => {
           const Icon = item.icon;
           return (
-            <Link key={item.id} href={item.href}>
+            <Link key={item.id} href={item.href} aria-label={item.label}>
               <span aria-hidden="true"><Icon size={18} /></span>
               <strong>{item.label}</strong>
               <span>{item.description}</span>
