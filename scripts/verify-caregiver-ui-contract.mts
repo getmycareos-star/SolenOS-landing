@@ -311,5 +311,5 @@ assert.match(lcrCurrent, /if \(current\.assessment\?\.person_id === scopedPerson
 assert.match(lcrCurrent, /postJSON\([\s\S]*?care-continuity\/situation-understanding\/reassess/);
 assert.match(lcrCurrent, /The latest care summary could not be refreshed\. The last saved view is shown and may be out of date\./);
 assert.ok(notificationCenter.includes('getJSON("/notifications?limit=100&offset=0")') || notificationCenter.includes('"/notifications?limit=100&offset=0"'), "notification delivery state must be read from the existing notification feed");
-assert.ok(notificationCenter.includes('"failed"') && notificationCenter.includes('"expired"'), "failed or expired notification delivery must not be presented as successful");
+assert.ok(notificationCenter.includes('"failed"') && notificationCenter.includes("failed_count"), "failed push delivery must remain distinguishable from accepted delivery");
 console.log("Caregiver UI contract checks passed.");
