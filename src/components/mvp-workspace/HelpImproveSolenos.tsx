@@ -74,15 +74,21 @@ export function HelpImproveSolenos({ compact }: Props) {
         }),
       });
       if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { detail?: string; error?: string };
-        throw new Error(data.detail ?? data.error ?? "We couldn't send your feedback right now.");
+        // Do not expose raw backend errors or implementation details in the
+        // caregiver interface. A failed write is reported plainly.
+        throw new Error("feedback_submission_failed");
       }
       // Only claim the feedback was recorded once the request actually succeeds.
       setDone(true);
     } catch (error) {
-      setSubmitError(
-        error instanceof Error ? error.message : caregiverSafeErrorMessage(),
-      );
+      const code = error instanceof Error ? error.message : "";
+      if (code === "Turn on optional improvement feedback in Privacy settings before sending feedback.") {
+        setSubmitError(code);
+      } else if (code === "We couldn't verify your improvement-feedback permission.") {
+        setSubmitError(code);
+      } else {
+        setSubmitError(caregiverSafeErrorMessage());
+      }
     } finally {
       submissionInFlightRef.current = false;
       setSaving(false);
