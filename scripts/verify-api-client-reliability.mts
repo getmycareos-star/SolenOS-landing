@@ -89,7 +89,15 @@ async function main() {
     new URL("../src/components/workflows/DailyCarePhotoCapture.tsx", import.meta.url),
     "utf8",
   );
-  assert.match(photoCaptureSource, /form\.append\("ingestion_key", retryKey\)/);
+  const attachedDocumentSource = readFileSync(
+    new URL("../src/components/mvp-workspace/capture/extract-attached.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(photoCaptureSource, /extractAttachedDocument\([\s\S]*?retryKey/);
+  assert.match(attachedDocumentSource, /ingestion_key:\s*uploadRetryKey/,
+    "photo idempotency must be carried into the durable upload payload");
+  assert.match(attachedDocumentSource, /for \(const \[key, value\] of Object\.entries\(fields\)\) form\.append\(key, value\)/,
+    "durable upload fields must be sent through the shared attachment path");
   assert.match(photoCaptureSource, /const retryKey = ingestionKey \?\? crypto\.randomUUID\(\)/);
   assert.match(photoCaptureSource, /setIngestionKey\(null\)/, "photo retry key must be cleared only when the selected source changes or the upload succeeds");
   const naturalLanguageUpdateSource = readFileSync(
