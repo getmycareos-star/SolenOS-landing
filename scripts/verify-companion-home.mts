@@ -132,7 +132,7 @@ assert.match(shell, /intent={sharePanelIntent}/);
 assert.match(shell, /It does not delete care information already saved in SolenOS/i, "workspace deletion must clearly distinguish local device data from saved care information");
 assert.match(shell, /getAnonymousAccessToken/);
 assert.match(shell, /revokeAnonymousSession/);
-assert.match(shell, /await clearDurableWriteQueue\(\)/,
+assert.match(shell, /await clearDurableWriteQueue\(/,
   "clearing a device must delete device-only offline care submissions as well as local session keys");
 assert.match(shell, /unsent updates stored only in this browser/,
   "the confirmation must explain that unsent local updates will be removed");
