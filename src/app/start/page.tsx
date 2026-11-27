@@ -5,6 +5,7 @@ import { OpsPageView } from "@/components/ops/OpsPageView";
 import { WELCOME_HOME } from "@/lib/trust-content";
 import { BRAND_NAME, BRAND_TAGLINE } from "@/lib/brand";
 import { SolenosWordmark } from "@/components/brand";
+import { ExistingAccountSignIn } from "@/components/public/ExistingAccountSignIn";
 
 export const metadata: Metadata = {
   title: `${BRAND_NAME} — Entry`,
@@ -30,6 +31,7 @@ export default function StartPage() {
           secondaryHref={WELCOME_HOME.secondaryCtaHref}
           secondaryLabel={WELCOME_HOME.secondaryCtaLabel}
         />
+        <ExistingAccountSignIn />
       </section>
 
       <section className="public-section">
