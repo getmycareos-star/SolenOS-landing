@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/app-shell/AppShell";
 import { WorkspaceNavigationAccessibility } from "@/components/app-shell/WorkspaceNavigationAccessibility";
 import { WorkspaceRouteBreadcrumbs } from "@/components/app-shell/WorkspaceRouteBreadcrumbs";
@@ -11,7 +11,8 @@ import { GlobalDisplayPreferences } from "@/components/accessibility/GlobalDispl
 import { BrandLoading } from "@/components/brand";
 import { caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 import { useWorkspace } from "@/lib/workspace-context";
-import { getJSON } from "@/api/client";
+import { ensureAnonymousSession, getJSON } from "@/api/client";
+import { EarlyAccessConsentForm } from "@/components/public/EarlyAccessConsentForm";
 
 function formatUpdatedDate(iso: string | null): string {
   if (!iso) return "";
@@ -94,14 +95,84 @@ function CareContextBar() {
   );
 }
 
+type ConsentState = "loading" | "required" | "verified" | "error";
+
 function WorkspaceEntryGate({ children }: { children: ReactNode }) {
   const { entryReady, recordLoadError } = useWorkspace();
+  const [consentState, setConsentState] = useState<ConsentState>("loading");
+  const [consentError, setConsentError] = useState("");
 
-  if (!entryReady) {
+  const loadConsent = useCallback(async () => {
+    setConsentState("loading");
+    setConsentError("");
+    try {
+      const session = await ensureAnonymousSession();
+      const status = await getJSON(
+        `/consent?person_id=${encodeURIComponent(session.person.id)}`,
+      ) as { verified?: boolean; required?: boolean };
+      if (status.verified === true && status.required === false) {
+        setConsentState("verified");
+      } else if (status.required === true && status.verified !== true) {
+        setConsentState("required");
+      } else {
+        throw new Error("The server returned an incomplete consent status.");
+      }
+    } catch {
+      setConsentError("We couldn't verify your privacy and safety acknowledgement. Your care workspace remains protected. Try again.");
+      setConsentState("error");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!entryReady) return;
+    void loadConsent();
+  }, [entryReady, loadConsent]);
+
+  if (!entryReady || consentState === "loading") {
     return (
       <main className="workspace-route-loading" role="status" aria-live="polite">
         <BrandLoading animate message="Preparing your care workspace…" />
       </main>
+    );
+  }
+
+  if (consentState === "error") {
+    return (
+      <AppShell brandHref="/workspace">
+        <main className="workspace-consent-gate">
+          <section className="workspace-consent-card" role="alert" aria-live="assertive">
+            <h1>We need to verify your acknowledgement.</h1>
+            <p>{consentError}</p>
+            <button type="button" className="workspace-primary" onClick={() => void loadConsent()}>
+              Try again
+            </button>
+          </section>
+        </main>
+      </AppShell>
+    );
+  }
+
+  if (consentState === "required") {
+    return (
+      <AppShell brandHref="/workspace">
+        <main className="workspace-consent-gate">
+          <section className="workspace-consent-card" aria-labelledby="workspace-consent-title">
+            <p className="solenos-home-eyebrow">Before you continue</p>
+            <h1 id="workspace-consent-title">Review how SolenOS handles care information.</h1>
+            <p>
+              Please review the Terms of Service and Privacy Policy and confirm
+              the required privacy and safety acknowledgements. This is a
+              one-time step for this caregiver identity. Optional improvement
+              feedback remains separate and is not enabled by this acknowledgement.
+            </p>
+            <EarlyAccessConsentForm
+              continueHref=""
+              continueLabel="Agree and continue"
+              onConsentDone={() => setConsentState("verified")}
+            />
+          </section>
+        </main>
+      </AppShell>
     );
   }
 
