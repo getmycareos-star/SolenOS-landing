@@ -824,6 +824,11 @@ export default function TimelinePage() {
                       {expanded && (
                         <div id={`timeline-details-${event.id}`} className="timeline-event-details">
                           <h4 className="timeline-event-details-title">More details</h4>
+                          {event.capture_processing?.message && (
+                            <p className="timeline-correction-note" role="status">
+                              {caregiverSafeAssistantText(event.capture_processing.message)}
+                            </p>
+                          )}
                           <dl className="timeline-event-facts">
                             <dt>When it happened</dt><dd>{eventTimeDisplay(event)}{!eventTimeWasNotProvided(event) && event.occurred_at_timezone ? ` (${event.occurred_at_timezone})` : ""}</dd>
                             <dt>When it was saved</dt><dd>{formatDateTime(event.recorded_at)}</dd>
