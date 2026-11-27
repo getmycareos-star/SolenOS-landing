@@ -1499,6 +1499,11 @@ await record("01c workspace links, browser back, More menu and account form vali
   await page.waitForURL((url) => url.pathname === "/workspace/timeline" &&
     url.searchParams.get("filter") === "documents" &&
     url.searchParams.get("q") === "discharge", { timeout: 15_000 });
+  await page.waitForFunction(
+    () => document.querySelector("#timeline-search")?.value === "discharge",
+    undefined,
+    { timeout: 5_000 },
+  );
   assert.equal(await page.locator("#timeline-search").inputValue(), "discharge",
     "Care history restores the search term when returning from a source document");
   assert.equal(await page.getByRole("button", { name: "Documents", exact: true }).getAttribute("aria-pressed"), "true",
