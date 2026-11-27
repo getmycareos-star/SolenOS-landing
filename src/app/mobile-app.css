@@ -2607,6 +2607,10 @@
   background: #202a24;
   color: #e6eee7;
 }
+:root[data-solenos-theme="dark"] .early-access-compact .early-access-badge {
+  background: #34483a;
+  color: #e6eee7;
+}
 :root[data-solenos-theme="dark"] .early-access-compact p,
 :root[data-solenos-theme="dark"] .early-access-compact .link-button {
   color: #e6eee7;
