@@ -380,6 +380,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         ) return
         storageKey = nextStorageKey
         conversationScopeRef.current = storageKey
+        if (recoveredPendingDraft) {
+          setRequestError('Your last message may not have received a response. Try again to safely resume it.')
+        }
         let savedSessionId: string | null = null
         try {
           savedSessionId = window.localStorage.getItem(storageKey)
