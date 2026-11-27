@@ -332,7 +332,7 @@ await record("00a first-use orientation, optional recipient details and action-s
   assert.equal(savedOptionalProfile.payload.relationship, "Daughter",
     "optional caregiver relationship must be saved to the caregiver's persisted care profile");
   await detailsBrowser.page.reload({ waitUntil: "domcontentloaded" });
-  await detailsBrowser.page.getByRole("heading", { name: "Care for Margaret Example.", exact: true })
+  await detailsBrowser.page.getByRole("heading", { name: "Care for Margaret Example", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
   assert.deepEqual(detailsBrowser.pageErrors, [],
     "saving optional first-use details and restoring the returning-caregiver view must not throw browser errors");
