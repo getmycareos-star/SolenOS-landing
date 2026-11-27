@@ -941,7 +941,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     }
   }
 
-  const reviewCareUpdate = async (proposalId: string, decision: 'accept' | 'reject') => {
+  const reviewCareUpdate = async (proposalId: string, decision: 'accept' | 'reject' | 'withdraw') => {
     const isCurrentCareScope = captureCareScope()
     if (reviewingCareUpdateId) return
     setReviewingCareUpdateId(proposalId)
@@ -955,14 +955,14 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         idempotent_replay?: boolean
       }
       if (!isCurrentCareScope()) return
-      const expectedStatus = decision === 'accept' ? 'accepted' : 'rejected'
+      const expectedStatus = decision === 'accept' ? 'accepted' : decision === 'reject' ? 'rejected' : 'withdrawn'
       if (response?.status !== expectedStatus || response?.decision !== decision) {
         throw new Error('The server did not confirm the requested review decision.')
       }
       if (decision === 'accept' && response?.written_to_lcr !== true) {
         throw new Error('The server did not confirm the Care Record update.')
       }
-      if (decision === 'reject' && response?.written_to_lcr !== false) {
+      if (decision !== 'accept' && response?.written_to_lcr !== false) {
         throw new Error('The server did not confirm that nothing was added to the Care Record.')
       }
       setPendingCareUpdates(current => current.filter(item => item.id !== proposalId))
@@ -971,7 +971,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       }
       setCareUpdateNotice(decision === 'accept'
         ? 'Your report was added to the Care Record. A healthcare professional has not confirmed it.'
-        : 'This suggestion was declined. Nothing was added to the Care Record.')
+        : decision === 'reject'
+          ? 'This suggestion was declined. Nothing was added to the Care Record.'
+          : 'This suggestion was withdrawn. Nothing was added to the Care Record.')
       if (showReviewedCareUpdates) await loadReviewedCareUpdates()
     } catch {
       if (isCurrentCareScope()) setCareUpdateError('We couldn’t confirm whether this review was saved. Refresh the suggestions and Care Record before trying again.')
@@ -1365,6 +1367,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
             </> : <>
               <button type="button" onClick={() => void reviewCareUpdate(item.id, 'accept')} disabled={careUpdateLoading || careUpdateLoadFailed || Boolean(reviewingCareUpdateId)}>{reviewingCareUpdateId === item.id ? 'Saving…' : 'Add to Care Record'}</button>
               <button type="button" className="is-secondary" onClick={() => void reviewCareUpdate(item.id, 'reject')} disabled={careUpdateLoading || careUpdateLoadFailed || Boolean(reviewingCareUpdateId)}>Don’t add</button>
+              <button type="button" className="is-secondary" onClick={() => void reviewCareUpdate(item.id, 'withdraw')} disabled={careUpdateLoading || careUpdateLoadFailed || Boolean(reviewingCareUpdateId)}>Withdraw suggestion</button>
               <button type="button" className="is-secondary" onClick={() => { setCorrectingCareUpdateId(item.id); setCorrectedCareUpdateText(item.proposed_change?.asserted_value || item.proposed_change?.source_quote || '') }} disabled={careUpdateLoading || careUpdateLoadFailed || Boolean(reviewingCareUpdateId)}>Correct wording</button>
             </>}
             <button type="button" className="is-secondary" onClick={() => void loadCareUpdateHistory(item.id)} disabled={loadingCareUpdateHistoryId === item.id}>{loadingCareUpdateHistoryId === item.id ? 'Loading history…' : 'Review history'}</button>
