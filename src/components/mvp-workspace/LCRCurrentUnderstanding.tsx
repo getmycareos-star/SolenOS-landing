@@ -2801,7 +2801,13 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
             ) : (
               <div className="lcr-empty-state">
                 <h3>Your Care Record does not have any care information yet.</h3>
-                <p>Add what you know in Daily Care or upload a medical document. You can also ask SolenOS to help you understand saved information.</p>
+                <p>This is where updates and documents come together over time. Start with one detail you want to remember. You do not need to complete a full history first.</p>
+                <nav aria-label="Ways to start your Care Record" className="lcr-empty-actions">
+                  <Link className="lcr-text-action" href="/workspace/daily-care">Add a care update</Link>
+                  <Link className="lcr-text-action" href="/workspace/documents">Upload a document</Link>
+                  <Link className="lcr-text-action" href="/workspace/companion">Ask SolenOS a question</Link>
+                </nav>
+                <p>Information may be incomplete or uncertain. SolenOS can help organise what you share, but AI suggestions are not confirmed medical facts.</p>
               </div>
             )
           ) : (
