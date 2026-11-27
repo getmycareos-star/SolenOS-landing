@@ -20,6 +20,7 @@ import { useWorkspace } from "@/lib/workspace-context";
 import { SUPPORT_EMAIL } from "@/lib/early-access-trust";
 import { createAccount, deleteJSON, ensureAnonymousSession, getAnonymousAccessToken, getJSON, markAnonymousSessionRevokedLocally, patchJSON, postJSON, putJSON, revokeAnonymousSession, signInToAccount } from "@/api/client";
 import { PolicySettingsPanel } from "@/components/mvp-workspace/PolicySettingsPanel";
+import { HelpImproveSolenos } from "@/components/mvp-workspace/HelpImproveSolenos";
 import { IdentityDeviceRecoveryPanel } from "@/components/mvp-workspace/IdentityDeviceRecoveryPanel";
 import { CaregiverAccessPanel } from "@/components/mvp-workspace/CaregiverAccessPanel";
 import { clearDurableWriteQueue } from "@/lib/offline-sync/durable-write-queue";
@@ -923,6 +924,11 @@ function ProductCard() {
             Share SolenOS
           </Button>
         </div>
+      </div>
+      <div className="settings-product-feedback">
+        <h3>Using SolenOS during early access</h3>
+        <p className="mobile-settings-hint">Tell us when something is confusing, not working or could be better.</p>
+        <HelpImproveSolenos compact />
       </div>
       {render()}
     </section>
