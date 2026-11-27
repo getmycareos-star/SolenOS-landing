@@ -19,7 +19,6 @@ import {
   hasEnteredCareRecord,
   markEnteredCareRecord,
 } from "@/lib/care-entry";
-import { hasCompletedOnboarding } from "@/lib/onboarding";
 import { ensureAnonymousSession, getAnonymousAccessToken, getJSON } from "@/api/client";
 
 const TELEMETRY_USER_STORAGE_KEY = "solenos_telemetry_user_id";
@@ -126,9 +125,7 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
 
     const existingToken = getAnonymousAccessToken();
     if (!existingToken) {
-      const onboardingPending = !hasCompletedOnboarding();
       const shouldEnterWorkspace =
-        onboardingPending ||
         hasEnteredCareRecord() ||
         Boolean(opsKey) ||
         freshEnter;
@@ -185,12 +182,9 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
             null,
         }));
 
-        // First-time users who have not completed onboarding are handled by the
-        // OnboardingGate (welcome → consent → app shell). Do not bounce them to
-        // /start — the gate owns the first-run flow.
-        const onboardingPending = !hasCompletedOnboarding();
+        // The first-use orientation is rendered inline on Today after the
+        // authenticated profile and care-history state are available.
         const entered =
-          onboardingPending ||
           hasEnteredCareRecord() ||
           fromServer.length > 0 ||
           hasDurableServerReality ||
