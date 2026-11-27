@@ -1351,3 +1351,9 @@ assert.equal(caregiverSafeApiErrorMessage(503), "This service is temporarily una
 assert.equal(caregiverSafeApiErrorMessage(500, { detail: "Traceback: PostgreSQL relation care_events missing" }), "We couldn't complete that request right now. Please try again.");
 assert.equal(caregiverSafeApiErrorMessage(422, { user_message: "Please enter a valid date." }), "Please enter a valid date.");
 assert.equal(caregiverSafeApiErrorMessage(422, { caregiver_message: "SQLAlchemy validation failed" }), "Please check the information and try again.");
+
+const shareTargetRoute = read("../src/app/share-target/route.ts");
+assert.doesNotMatch(shareTargetRoute, /error: data\.detail/,
+  "raw upstream share errors must never be returned to the caregiver");
+assert.match(shareTargetRoute, /We couldn’t save the shared content/,
+  "share-intake failures must use plain caregiver language");
