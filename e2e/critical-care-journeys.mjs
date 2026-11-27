@@ -453,6 +453,22 @@ await record("01 first caregiver session", async () => {
 let session = await newSession("critical journey matrix");
 const shareSession = session;
 const identity = auth(session);
+const shareAppointment = await request("/api/v1/appointments", {
+  token: identity.token,
+  method: "POST",
+  body: {
+    person_id: identity.personId,
+    title: "Primary care follow-up",
+    scheduled_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    provider: "Primary care clinician",
+    healthcare_org: "E2E clinic",
+    preparation_notes: "Review the caregiver's recorded follow-up.",
+    status: "scheduled",
+    created_by_caregiver_id: identity.caregiverId,
+  },
+});
+assert.ok([200, 201].includes(shareAppointment.status), JSON.stringify(shareAppointment.payload));
+assert.ok(shareAppointment.payload?.id, "appointment export acceptance needs a persisted appointment fixture");
 const matrixConsent = await request("/api/v1/consent", {
   token: identity.token,
   method: "POST",
