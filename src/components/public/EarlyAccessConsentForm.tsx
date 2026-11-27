@@ -8,8 +8,8 @@ import { apiUrl, safeJson } from "@/lib/api-url";
 import { canSubmitEarlyAccessConsent } from "@/lib/trust-content/early-access-consent";
 
 /**
- * Required acknowledgement form used by the shared workspace entry gate.
- * The server verifies and records each acknowledgement against the active caregiver.
+ * Legacy explicit acknowledgement form. It is not mounted as a blanket
+ * workspace-entry gate; sensitive operations enforce their own server consent.
  */
 export function EarlyAccessConsentForm({
   continueHref = "/workspace?enter=1",
