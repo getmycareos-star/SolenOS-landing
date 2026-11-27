@@ -55,6 +55,7 @@ includes(styles, ".first-use-orientation", "First-use screen must have responsiv
 includes(styles, ".early-access-compact", "Returning notice must have compact styles");
 includes(productDirective, "same route, page structure, navigation", "Product directive must preserve one shared experience");
 includes(productDirective, "consent", "Product directive must document consent enforcement");
-assert.ok(!productDirective.includes("Do not use a blanket checkbox or consent overlay to block entry"), "Product directive must not contradict the enforced consent gate");
+includes(productDirective, "do not introduce a blanket privacy checkbox", "Product directive must preserve direct Care Record entry");
+includes(productDirective, "A direct API request cannot bypass those checks", "Protected feedback writes must remain server-enforced");
 
-console.log("✓ shared first-use orientation, persisted caregiver completion, workspace-wide required consent, early-access feedback and returning state contracts are present");
+console.log("✓ shared first-use orientation, persisted caregiver completion, action-specific consent, early-access feedback and returning state contracts are present");
