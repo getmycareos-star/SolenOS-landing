@@ -103,6 +103,7 @@
     "verify:attention-now": "tsx scripts/verify-attention-now.mts",
     "verify:living-care-record-regression": "tsx scripts/verify-living-care-record-regression.mts",
     "verify:welcome-first-visit": "tsx scripts/verify-welcome-first-visit.mts",
+    "verify:first-use-orientation": "tsx scripts/verify-first-use-orientation.mts",
     "verify:return-continuity": "tsx scripts/verify-return-continuity.mts",
     "verify:open-uncertainties-return": "tsx scripts/verify-open-uncertainties-return.mts",
     "verify:feedback-containment": "tsx scripts/verify-feedback-containment.mts",
