@@ -11,6 +11,7 @@ import QuickDailyCheckIn from "@/components/workflows/QuickDailyCheckIn";
 import NaturalLanguageDailyUpdate from "@/components/workflows/NaturalLanguageDailyUpdate";
 import DailyCareOfflineQueueNotice from "@/components/workflows/DailyCareOfflineQueueNotice";
 import DailyCarePhotoCapture from "@/components/workflows/DailyCarePhotoCapture";
+import DailyCareRecentDocuments from "@/components/workflows/DailyCareRecentDocuments";
 
 type StructuredCaptureMode = "medicine" | "measurement" | "note";
 type CaptureMode = "update" | "photo" | "checkin";
@@ -67,6 +68,7 @@ export default function DailyCarePage() {
       </header>
 
       <DailyCareOfflineQueueNotice />
+      <DailyCareRecentDocuments />
 
       <section aria-labelledby="daily-care-capture-title" className="daily-care-context-panel add-update-capture-panel">
         <h2 id="daily-care-capture-title">What would you like to add?</h2>
