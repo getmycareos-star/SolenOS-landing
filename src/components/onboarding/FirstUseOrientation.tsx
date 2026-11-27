@@ -58,14 +58,21 @@ export function FirstUseOrientation() {
     try {
       const saved = await getJSON("/care-profile") as CareProfile;
       setProfile(saved);
-      setRecipientName(
-        saved.name && saved.name !== "Care recipient" ? saved.name : "",
+      const hasNamedRecipient = Boolean(
+        saved.name?.trim() && saved.name.trim() !== "Care recipient",
       );
-      setRelationship(saved.relationship ?? "");
+      const hasExplicitRelationship = Boolean(
+        saved.relationship?.trim() && saved.relationship.trim() !== "Family",
+      );
+      const hasSavedCareContext = Boolean(saved.condition?.trim());
+      setRecipientName(hasNamedRecipient ? saved.name!.trim() : "");
+      setRelationship(hasExplicitRelationship ? saved.relationship!.trim() : "");
 
-      // Existing care history is stronger evidence of a returning caregiver
-      // than a device-local first-visit flag. Persist the transition once.
-      if (hasCareHistory && !saved.first_use_orientation_completed_at) {
+      // Existing history or an explicitly saved recipient profile is stronger
+      // evidence of a returning caregiver than any device-local visit flag.
+      const hasPriorCareSetup = hasCareHistory || hasNamedRecipient ||
+        hasExplicitRelationship || hasSavedCareContext;
+      if (hasPriorCareSetup && !saved.first_use_orientation_completed_at) {
         await postJSON("/care-profile/orientation-complete", {});
       }
       setLoadState("ready");
@@ -79,7 +86,11 @@ export function FirstUseOrientation() {
     void load();
   }, [load]);
 
-  const completed = Boolean(profile?.first_use_orientation_completed_at) || hasCareHistory;
+  const completed = Boolean(profile?.first_use_orientation_completed_at) ||
+    hasCareHistory ||
+    Boolean(profile?.name?.trim() && profile.name.trim() !== "Care recipient") ||
+    Boolean(profile?.relationship?.trim() && profile.relationship.trim() !== "Family") ||
+    Boolean(profile?.condition?.trim());
 
   const finish = useCallback(async (destination?: string) => {
     if (saving || !profile) return;
