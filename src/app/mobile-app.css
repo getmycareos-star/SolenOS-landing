@@ -2306,3 +2306,210 @@
     grid-column: 1 / -1;
   }
 }
+
+
+/* First-use orientation is part of Today, never a separate route or wizard. */
+.first-use-orientation {
+  display: grid;
+  gap: 1.35rem;
+  margin: 0 0 1.5rem;
+  padding: clamp(1rem, 3.5vw, 1.5rem);
+  border: 1px solid var(--border-subtle, rgba(35, 45, 38, 0.14));
+  border-radius: 1.1rem;
+  background: var(--surface-primary, #fff);
+}
+.first-use-orientation h2,
+.first-use-orientation h3,
+.first-use-orientation p {
+  margin-top: 0;
+}
+.first-use-intro h2 {
+  margin-bottom: 0.55rem;
+  color: var(--text-primary, #171a18);
+  font-size: clamp(1.45rem, 5vw, 2rem);
+  line-height: 1.15;
+}
+.first-use-intro p,
+.first-use-early-access p,
+.first-use-recipient p,
+.first-use-lcr-explainer p,
+.first-use-footer p {
+  color: var(--text-secondary, #5c665f);
+  line-height: 1.55;
+}
+.first-use-brand {
+  display: inline-block;
+  margin-bottom: 0.7rem;
+  color: #65755f;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.first-use-early-access {
+  display: grid;
+  gap: 0.55rem;
+  padding: 1rem;
+  border: 1px solid rgba(125, 139, 117, 0.32);
+  border-radius: 0.85rem;
+  background: rgba(125, 139, 117, 0.09);
+}
+.first-use-early-access h3,
+.first-use-recipient h3,
+.first-use-starting-points h3,
+.first-use-lcr-explainer h3,
+.first-use-footer h3 {
+  margin-bottom: 0.25rem;
+  color: var(--text-primary, #171a18);
+  font-size: 1.05rem;
+  line-height: 1.3;
+}
+.early-access-badge {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  padding: 0.24rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(125, 139, 117, 0.17);
+  color: #4f614a;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.first-use-recipient {
+  display: grid;
+  gap: 0.55rem;
+}
+.first-use-recipient label {
+  color: var(--text-primary, #171a18);
+  font-size: 0.88rem;
+  font-weight: 650;
+}
+.first-use-recipient label span {
+  color: var(--text-secondary, #68716b);
+  font-weight: 400;
+}
+.first-use-recipient .mobile-settings-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+.first-use-hint {
+  margin: 0;
+  color: var(--text-secondary, #68716b);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+.first-use-path-list {
+  display: grid;
+  gap: 0.55rem;
+}
+.first-use-path {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem;
+  border: 1px solid var(--border-subtle, rgba(35, 45, 38, 0.14));
+  border-radius: 0.8rem;
+  background: var(--surface-secondary, #fafbf9);
+  color: var(--text-primary, #171a18);
+  text-align: left;
+  cursor: pointer;
+}
+.first-use-path:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+.first-use-path svg {
+  flex: 0 0 auto;
+  color: #65755f;
+}
+.first-use-path span {
+  display: grid;
+  gap: 0.18rem;
+}
+.first-use-path strong {
+  font-size: 0.92rem;
+}
+.first-use-path small {
+  color: var(--text-secondary, #68716b);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+.first-use-lcr-explainer ul {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.65rem 0;
+  padding-left: 1.2rem;
+  color: var(--text-secondary, #5c665f);
+  line-height: 1.5;
+}
+.first-use-footer {
+  display: grid;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle, rgba(35, 45, 38, 0.14));
+}
+.first-use-continue {
+  width: 100%;
+  min-height: 48px;
+}
+.first-use-footer a {
+  color: #53664e;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+.first-use-error,
+.first-use-status {
+  color: var(--text-primary, #171a18);
+}
+.first-use-error {
+  margin: 0;
+  padding: 0.7rem 0.8rem;
+  border-radius: 0.65rem;
+  background: rgba(170, 60, 50, 0.08);
+}
+.first-use-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border-subtle, rgba(35, 45, 38, 0.14));
+  border-radius: 0.8rem;
+}
+.first-use-status p {
+  margin: 0;
+}
+.early-access-compact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem 1rem;
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border-subtle, rgba(35, 45, 38, 0.12));
+  border-radius: 0.75rem;
+  background: var(--surface-secondary, #fafbf9);
+}
+.early-access-compact p {
+  display: inline;
+  margin: 0 0 0 0.45rem;
+  color: var(--text-secondary, #68716b);
+  font-size: 0.8rem;
+}
+@media (max-width: 480px) {
+  .first-use-orientation {
+    gap: 1.1rem;
+    padding: 1rem;
+  }
+  .early-access-compact {
+    align-items: flex-start;
+  }
+  .early-access-compact p {
+    display: block;
+    margin: 0.35rem 0 0;
+  }
+}
