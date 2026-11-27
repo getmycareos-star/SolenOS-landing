@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FileText, MessageCircle, NotebookPen } from "lucide-react";
@@ -64,7 +63,6 @@ export function FirstUseOrientation() {
       const hasExplicitRelationship = Boolean(
         saved.relationship?.trim() && saved.relationship.trim() !== "Family",
       );
-      const hasSavedCareContext = Boolean(saved.condition?.trim());
       setRecipientName(hasNamedRecipient ? saved.name!.trim() : "");
       setRelationship(hasExplicitRelationship ? saved.relationship!.trim() : "");
 
@@ -282,9 +280,6 @@ export function FirstUseOrientation() {
         >
           {saving ? "Saving…" : "Continue to Today"}
         </button>
-        <p className="first-use-hint">
-          By using SolenOS, you agree to the <Link href="/terms">Terms of Service</Link> and <Link href="/privacy">Privacy Policy</Link>. You can read them at any time.
-        </p>
       </footer>
     </section>
   );
