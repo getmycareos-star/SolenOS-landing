@@ -77,12 +77,14 @@ try {
     await route.fulfill({ response });
   });
 
-  await page.goto(new URL("/workspace/open-loops", frontend).toString(), { waitUntil: "domcontentloaded" });
+  await page.goto(new URL("/", frontend).toString(), { waitUntil: "domcontentloaded" });
+  await page.getByRole("link", { name: "Start Adding Care Information" }).first().click();
   await page.waitForFunction(() => Boolean(
     localStorage.getItem("solenos_anonymous_access_token") &&
     localStorage.getItem("solenos_backend_person_id") &&
     localStorage.getItem("solenos_backend_caregiver_id")
-  ), { timeout: 15_000 });
+  ), { timeout: 20_000 });
+  await page.goto(new URL("/workspace/open-loops", frontend).toString(), { waitUntil: "domcontentloaded" });
   try {
     await page.waitForFunction(() =>
       Boolean(document.querySelector(".followups-section") || document.querySelector(".followups-page [role='alert']")),
