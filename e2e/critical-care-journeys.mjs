@@ -249,7 +249,7 @@ await record("00a first-use consent gate and inline orientation", async () => {
   const consentCheckbox = page.locator(".early-access-consent-check input[type='checkbox']");
   await consentCheckbox.check();
   await page.getByRole("button", { name: "Agree and continue", exact: true }).click();
-  await page.getByRole("heading", { name: "Welcome to SolenOS", exact: true })
+  await page.getByText("Welcome to SolenOS", { exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
   await page.getByText("Early access · We're testing SolenOS", { exact: true })
     .waitFor({ state: "visible", timeout: 10_000 });
@@ -285,9 +285,9 @@ await record("00a first-use consent gate and inline orientation", async () => {
     "required acknowledgement must not enable optional improvement feedback");
 
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.getByRole("heading", { name: "Welcome back" })
+  await page.getByText("Welcome back", { exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
-  assert.equal(await page.getByRole("heading", { name: "Welcome to SolenOS", exact: true }).count(), 0,
+  assert.equal(await page.getByText("Welcome to SolenOS", { exact: true }).count(), 0,
     "returning visit must not repeat the full first-use orientation");
   await verifyMobile(page);
   assert.deepEqual(pageErrors, [], `first-use consent and orientation must not throw browser errors: ${JSON.stringify(pageErrors)}`);
