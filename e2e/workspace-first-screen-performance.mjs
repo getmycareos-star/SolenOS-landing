@@ -177,12 +177,20 @@ try {
   assert.ok(mobileMenuOpenMs >= 0, "mobile menu interaction must be measured");
   assert.ok(navigationToDocumentsMs !== null && navigationToDocumentsMs >= 0, "navigation-to-route mount must be measured");
 
-  const forbiddenWrites = apiRequests.filter((item) =>
+  const nonSessionWrites = apiRequests.filter((item) =>
     item.method !== "GET" &&
     !item.path.endsWith("/sessions/anonymous") &&
     !item.path.endsWith("/sessions/refresh")
   );
-  assert.deepEqual(forbiddenWrites, [], "first-screen performance test must not write care records");
+  // First-use orientation acknowledgement is profile metadata, not a care
+  // record mutation. No Daily Care, document, LCR, appointment or handoff write
+  // is permitted during this read-only performance measurement.
+  const careRecordWrites = nonSessionWrites.filter((item) =>
+    !item.path.endsWith("/care-profile/orientation-complete")
+  );
+  assert.deepEqual(careRecordWrites, [], "first-screen performance test must not write care records");
+  assert.ok(nonSessionWrites.every((item) => item.path.endsWith("/care-profile/orientation-complete")),
+    "only the non-care-record first-use orientation acknowledgement may be written");
 
   console.log("WORKSPACE_FIRST_SCREEN_PERFORMANCE=" + JSON.stringify({
     viewport: "390x844",
