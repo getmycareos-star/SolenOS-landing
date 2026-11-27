@@ -7,22 +7,6 @@ import { execFileSync } from "node:child_process";
 const frontend = process.env.FRONTEND_URL ?? "http://127.0.0.1:3000";
 const backend = process.env.BACKEND_URL ?? "http://127.0.0.1:8000";
 const requireLiveQwen = process.env.SOLENOS_REQUIRE_LIVE_QWEN === "1";
-const openApiResponse = await fetch(new URL("/openapi.json", backend));
-assert.equal(openApiResponse.status, 200, "the isolated backend must expose its active API contract");
-const openApi = await openApiResponse.json();
-assert.ok(
-  openApi.components?.schemas?.QwenAssistRequest?.properties?.source_event_id,
-  "Companion assist requests must accept a source-event anchor for LCR-grounded interpretation",
-);
-const sourceEventIdSchema = openApi.components.schemas.QwenAssistRequest.properties.source_event_id;
-const sourceEventIdStringSchema = sourceEventIdSchema.maxLength !== undefined
-  ? sourceEventIdSchema
-  : sourceEventIdSchema.anyOf?.find((schema) => schema.type === "string");
-assert.equal(
-  sourceEventIdStringSchema?.maxLength,
-  128,
-  "source-event anchors must use the same bounded identifier contract as persisted care events",
-);
 const browser = await chromium.launch({ headless: true, args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"] });
 const password = "CI-critical-journey-passphrase-2026!";
 const results = [];
@@ -317,6 +301,25 @@ await record("00a first-use orientation, optional recipient details and action-s
   assert.deepEqual(pageErrors, [], `first-use orientation and consent boundaries must not throw browser errors: ${JSON.stringify(pageErrors)}`);
   await context.close();
 });
+// Run the Companion schema preflight after the onboarding-specific browser acceptance,
+// so an unrelated API schema failure cannot prevent the first-use journey from executing.
+const openApiResponse = await fetch(new URL("/openapi.json", backend));
+assert.equal(openApiResponse.status, 200, "the isolated backend must expose its active API contract");
+const openApi = await openApiResponse.json();
+assert.ok(
+  openApi.components?.schemas?.QwenAssistRequest?.properties?.source_event_id,
+  "Companion assist requests must accept a source-event anchor for LCR-grounded interpretation",
+);
+const sourceEventIdSchema = openApi.components.schemas.QwenAssistRequest.properties.source_event_id;
+const sourceEventIdStringSchema = sourceEventIdSchema.maxLength !== undefined
+  ? sourceEventIdSchema
+  : sourceEventIdSchema.anyOf?.find((schema) => schema.type === "string");
+assert.equal(
+  sourceEventIdStringSchema?.maxLength,
+  128,
+  "source-event anchors must use the same bounded identifier contract as persisted care events",
+);
+
 // 0b. A linked account can restore its server-bound care record after browser storage is cleared.
 const restoreSession = await newSession("account restore after storage clear");
 const restoreEmail = `restore-${randomUUID()}@example.test`;
