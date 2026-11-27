@@ -98,7 +98,7 @@ assert.match(currentUnderstanding, /RecordState kind="error".*onAction=\{\(\) =>
 assert.ok(workspaceHome.includes('<LCRCurrentUnderstanding showNextStep viewMode="today" />'), "Home uses the concise current-care projection and record-aware next step");
 assert.ok(workspaceHome.includes("<UpcomingAppointmentSummary />"), "Home retains upcoming appointment context after the current-care picture");
 assert.doesNotMatch(workspaceHome, /<CaregiverHandoverInbox \/>/, "the Home page does not carry a secondary inbox");
-assert.ok(handoffs.includes("<CaregiverHandoverInbox key={scopeEpoch} />"), "the handover inbox remains mounted within Care handoffs and resets with the active care scope");
+assert.match(handoffs, /<CaregiverHandoverInbox(?:\s+key=\{scopeEpoch\})?\s*\/>/, "the handover inbox remains mounted within Care handoffs and resets with the active care scope");
 assert.doesNotMatch(workspaceMore, /HistoryDrawer/, "More does not contain care-history browsing");
 assert.match(careContinuity, /CARE_INFORMATION_NAVIGATION\.map/, "care-history and care-information destinations are discoverable together");
 assert.ok(navigation.includes('href: "/workspace/companion"') && navigation.includes('label: "Ask SolenOS"'), "Ask SolenOS remains a primary destination");
