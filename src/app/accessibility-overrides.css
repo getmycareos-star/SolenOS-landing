@@ -140,7 +140,7 @@ button, [role="button"], a, input, select, textarea, summary { touch-action: man
 button, [role="button"], input[type="button"], input[type="submit"], input[type="reset"], select { min-height: 44px; }
 a, button, input, select, textarea, label, summary { -webkit-tap-highlight-color: transparent; }
 :where(button, a, input, select, textarea, summary, [tabindex]):focus-visible {
-  outline: 3px solid #285d38;
+  outline: 3px solid var(--theme-link);
   outline-offset: 3px;
 }
 .solenos-display-preferences {
