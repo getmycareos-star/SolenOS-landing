@@ -7,6 +7,7 @@ import { BrandLoading } from "@/components/brand";
 import Link from "next/link";
 import { LCRCurrentUnderstanding } from "@/components/mvp-workspace/LCRCurrentUnderstanding";
 import { UpcomingAppointmentSummary } from "@/components/app-shell/UpcomingAppointmentSummary";
+import { FirstUseOrientation } from "@/components/onboarding/FirstUseOrientation";
 
 const Companion = dynamic(() => import("@/components/workflows/AICompanion"), {
   ssr: false,
@@ -34,6 +35,7 @@ function WorkspaceHomeInner() {
 
   return (
     <div className="mobile-screen feature-page solenos-lcr-home">
+      <FirstUseOrientation />
       <header className="solenos-workspace-page-heading">
         <p className="solenos-home-eyebrow">TODAY</p>
         <h1>Today</h1>
