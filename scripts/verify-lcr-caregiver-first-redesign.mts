@@ -26,7 +26,7 @@ const navigation = fs.readFileSync("src/lib/workspace-navigation.ts", "utf8");
 const howItWorks = fs.readFileSync("src/app/how-it-works/page.tsx", "utf8");
 const publicHome = fs.readFileSync("src/app/page.tsx", "utf8");
 
-assert.match(legacyRoute, /redirect\("\/workspace\/care-continuity"\)/, "the legacy record route redirects safely to Care information");
+assert.match(legacyRoute, /preserveLegacySearchParams\("\/workspace\/care-continuity"/, "the legacy record route preserves its Care information destination and query parameters");
 assert.doesNotMatch(legacyRoute, /SOLENOS · LIVING CARE RECORD|Record timeline|Add to record|CognitiveWorkspace/, "old LCR interface must not be rendered as a separate home");
 assert.doesNotMatch(capture, /ConsentGatePanel|consentState !== "accepted"|ResearchPreviewAckGate/, "care-record capture is not blocked by acknowledgement checkboxes");
 assert.doesNotMatch(capture, /HelpImproveSolenos|QwenAssistPanel/, "capture workspace does not interleave feedback or a separate AI chat panel");
