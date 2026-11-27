@@ -657,6 +657,12 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       const previousScopeKey = lastObservedScopeKeyRef.current
       lastObservedScopeKeyRef.current = activeScopeKey
       if (previousScopeKey === null || activeScopeKey === previousScopeKey) return
+      try {
+        // An unscoped bootstrap draft must never cross an explicit recipient switch.
+        window.sessionStorage.removeItem(pendingCompanionBootstrapStorageKey())
+      } catch {
+        // Storage cleanup must not block clearing the prior caregiver's UI.
+      }
       conversationScopeSequenceRef.current += 1
       conversationScopeRef.current = null
       setMessages([])
