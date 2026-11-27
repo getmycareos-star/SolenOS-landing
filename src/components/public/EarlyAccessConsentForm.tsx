@@ -8,8 +8,8 @@ import { apiUrl, safeJson } from "@/lib/api-url";
 import { canSubmitEarlyAccessConsent } from "@/lib/trust-content/early-access-consent";
 
 /**
- * One required checkbox covers both linked legal documents. The server confirms
- * the acknowledgement before local onboarding is marked complete.
+ * Legacy explicit acknowledgement form. It is not mounted as a blanket
+ * workspace-entry gate; sensitive operations enforce their own server consent.
  */
 export function EarlyAccessConsentForm({
   continueHref = "/workspace?enter=1",
@@ -83,8 +83,7 @@ export function EarlyAccessConsentForm({
         }
       }
 
-      // OnboardingGate persists the one-time local flag only after the server
-      // has confirmed the required acknowledgement.
+      // Notify the calling flow only after the server confirms the acknowledgement.
       onConsentDone?.();
       if (continueHref) window.location.assign(continueHref);
     } catch {
