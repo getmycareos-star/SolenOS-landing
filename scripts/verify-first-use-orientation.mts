@@ -42,16 +42,13 @@ includes(context, "hasCareHistory", "Workspace must expose server-derived care h
 includes(context, "Boolean(existingToken)", "A valid server-issued session must restore workspace entry without a local UI flag");
 assert.ok(!context.includes("hasCompletedOnboarding") && !context.includes("onboardingPending"), "Do not retain parallel local onboarding state");
 
-includes(shell, "/consent?person_id=", "Workspace shell must resolve consent for the active person");
-includes(shell, "status.verified === true && status.required === false", "Workspace entry requires server-verified consent");
-includes(shell, "status.required === true", "Required consent must be shown when incomplete");
-includes(shell, "EarlyAccessConsentForm", "Required consent must use the existing acknowledgement form");
-includes(shell, 'continueHref=""', "Consent acknowledgement must not redirect around the shared workspace");
-includes(consentForm, "medical or emergency advice", "Consent must explain the medical boundary");
-includes(consentForm, "care information is not sold or used for advertising", "Consent must explain the privacy promise");
-includes(consentForm, "people I trust", "Consent must explain multi-caregiver access");
-includes(consentForm, "data_improvement_consent: false", "Required acknowledgement must not enable optional improvement feedback");
+assert.ok(!shell.includes("WorkspaceEntryGate"), "Do not introduce a blanket workspace-entry consent gate");
+assert.ok(!shell.includes("EarlyAccessConsentForm"), "The legacy acknowledgement form must not block direct Care Record entry");
+includes(consentForm, "medical or emergency advice", "The legacy acknowledgement copy must explain the medical boundary");
+includes(consentForm, "care information is not sold or used for advertising", "The legacy acknowledgement copy must explain the privacy promise");
+includes(consentForm, "people I trust", "The legacy acknowledgement copy must explain multi-caregiver access");
 includes(feedback, "data_improvement_consent", "Feedback must verify optional improvement permission");
+includes(feedback, "Turn on optional improvement feedback in Privacy settings before sending feedback.", "Feedback must explain the required optional opt-in");
 includes(feedback, "feedback_category: option", "Feedback must persist the selected category");
 includes(settings, "<HelpImproveSolenos compact />", "Feedback must remain available in Settings");
 includes(styles, ".first-use-orientation", "First-use screen must have responsive styles");
