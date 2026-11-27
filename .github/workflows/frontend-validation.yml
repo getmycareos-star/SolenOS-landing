@@ -64,6 +64,8 @@ jobs:
         run: npm ci
       - name: Verify caregiver-facing language before other checks
         run: npm run verify:caregiver-ui-language-all
+      - name: Verify shared first-use orientation and consent contract
+        run: npm run verify:first-use-orientation
       - name: Install backend dependencies
         working-directory: backend-service/backend
         run: python -m pip install --upgrade pip && python -m pip install -e .
