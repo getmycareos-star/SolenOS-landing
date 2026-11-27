@@ -3577,3 +3577,79 @@ html.solenos-first-visit-mode .solenos-chat-app .solenos-chat-main {
 :root[data-solenos-theme="dark"] .solenos-chat-app :where(input, textarea)::placeholder {
   color: #a3b1a5;
 }
+
+
+/* Recent document status on Daily Care. */
+.solenos-chat-app .daily-care-recent-documents {
+  display: grid;
+  gap: 12px;
+  margin: 14px 0 18px;
+  padding: 16px;
+  border: 1px solid var(--sn-line);
+  border-radius: var(--sn-radius-lg);
+  background: var(--sn-surface);
+  color: var(--sn-ink);
+}
+.solenos-chat-app .daily-care-recent-documents__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.solenos-chat-app .daily-care-recent-documents__heading h2 {
+  margin: 0;
+  color: var(--sn-ink);
+  font-size: calc(16px * var(--solenos-text-scale, 1));
+}
+.solenos-chat-app .daily-care-recent-documents__heading p,
+.solenos-chat-app .daily-care-recent-documents li p,
+.solenos-chat-app .daily-care-recent-documents > p {
+  margin: 5px 0 0;
+  color: var(--sn-muted);
+  font-size: calc(12px * var(--solenos-text-scale, 1));
+  line-height: 1.5;
+}
+.solenos-chat-app .daily-care-recent-documents__heading a {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  color: var(--sn-forest);
+  font-size: calc(12px * var(--solenos-text-scale, 1));
+  font-weight: 700;
+}
+.solenos-chat-app .daily-care-recent-documents ul {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.solenos-chat-app .daily-care-recent-documents li {
+  padding: 10px 0 0;
+  border-top: 1px solid var(--sn-line);
+}
+.solenos-chat-app .daily-care-recent-documents li strong {
+  color: var(--sn-ink);
+  font-size: calc(13px * var(--solenos-text-scale, 1));
+  overflow-wrap: anywhere;
+}
+.solenos-chat-app .daily-care-recent-documents li p {
+  margin-top: 3px;
+}
+.solenos-chat-app .daily-care-recent-documents button {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--sn-line);
+  border-radius: var(--sn-radius-md);
+  background: var(--sn-surface-soft);
+  color: var(--sn-ink);
+}
+@media (max-width: 560px) {
+  .solenos-chat-app .daily-care-recent-documents {
+    padding: 13px;
+  }
+  .solenos-chat-app .daily-care-recent-documents__heading {
+    flex-wrap: wrap;
+  }
+}
