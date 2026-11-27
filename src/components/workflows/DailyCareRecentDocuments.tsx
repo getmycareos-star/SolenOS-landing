@@ -113,6 +113,7 @@ export default function DailyCareRecentDocuments() {
     setError("");
     try {
       const session = await ensureAnonymousSession();
+      if (sequence !== requestSequence.current) return;
       const nextScope = { personId: session.person.id, caregiverId: session.caregiver.id };
       if (loadedScope.current && (
         loadedScope.current.personId !== nextScope.personId
