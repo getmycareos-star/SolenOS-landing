@@ -1173,6 +1173,14 @@ await record("01c workspace links, browser back, More menu and account form vali
   assert.equal(await exportDialog.getByRole("checkbox", {
     name: /I checked each detail against the saved note or document, including its date and what is still unclear\\. I understand that SolenOS does not independently verify every summary statement/,
   }).count(), 0, "professional briefings remain private review/export and must not expose the family-sharing approval control");
+  console.log("APPOINTMENT_BRIEFING_SOURCE_AUDIT", JSON.stringify({
+    generation_status: appointmentDraft.generation?.status,
+    daily_care_status: appointmentDraft.source_statuses?.daily_care,
+    daily_care_sources: appointmentDraft.source_references
+      .filter((source) => source.source_type === "daily_care_observation")
+      .map((source) => ({ source_table: source.source_table, source_id: source.source_id, text_preview: source.text?.slice(0, 180) })),
+    generated_source_refs: appointmentDraft.generation?.sections?.map((section) => section.source_ref),
+  }));
   const appointmentClaimReview = exportDialog.getByRole("checkbox", { name: /I checked “.*” against its saved source wording, dates and what is still unclear/ });
   const appointmentClaimReviewCount = await appointmentClaimReview.count();
   // Professional appointment exports intentionally exclude caregiver-profile
