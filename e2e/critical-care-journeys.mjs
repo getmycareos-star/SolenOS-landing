@@ -1625,12 +1625,12 @@ await record("01c workspace links, browser back, More menu and account form vali
     if (element instanceof HTMLDetailsElement && !element.open) element.open = true;
   });
   await accountSection.getByText(/Your Care Record is still saved/).waitFor({ timeout: 10_000 });
-  const signedOutState = await page.evaluate(() => ({
+  const signedOutStateAfterReauth = await page.evaluate(() => ({
     notice: sessionStorage.getItem("solenos_account_signed_out_notice"),
     token: localStorage.getItem("solenos_anonymous_access_token"),
   }));
-  assert.equal(signedOutState.notice, "1", "the sign-out confirmation must survive the workspace scope refresh");
-  assert.equal(signedOutState.token, null, "the revoked bearer token must be removed from this browser");
+  assert.equal(signedOutStateAfterReauth.notice, "1", "the sign-out confirmation must survive the workspace scope refresh");
+  assert.equal(signedOutStateAfterReauth.token, null, "the revoked bearer token must be removed from this browser");
   const securitySection = page.locator("#settings-security");
   await securitySection.locator("summary").click();
   await page.locator("#identity-recovery-email").fill(accountEmail);
