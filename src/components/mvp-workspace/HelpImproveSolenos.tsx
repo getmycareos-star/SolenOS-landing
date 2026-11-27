@@ -124,6 +124,7 @@ export function HelpImproveSolenos({ compact }: Props) {
       </ul>
       <label className="research-feedback-field">
         <span>Anything else? (optional)</span>
+        <small>Please avoid including names, contact details, or detailed medical information.</small>
         <textarea
           maxLength={10000}
           rows={2}
