@@ -264,14 +264,7 @@ assert.match(currentUnderstanding, /cause instanceof ApiResponseError && cause\.
 assert.match(currentUnderstanding, /const approveFollowUp[\s\S]*?personIdRef\.current !== personId[\s\S]*?if \(personIdRef\.current === personId\) setActionApprovalLoadingId\(null\)/,
   "late follow-up approval responses must not overwrite another active care record");
 
-assert.match(dailyCare, /schema_status !== "complete"[\s\S]*?missing_required_sources[\s\S]*?missing_optional_sources[\s\S]*?failed_sources/, "Daily Care must disclose incomplete current-care retrieval instead of treating partial results as complete");
-assert.match(dailyCare, /Some saved care information could not be fully checked\. This view may be incomplete/, "a partial current-care projection must be explained in plain language");
-
-const dailyCareResetStart = dailyCare.indexOf("const resetForSessionChange = () => {");
-const dailyCareResetEnd = dailyCare.indexOf("\n    };", dailyCareResetStart);
-const dailyCareReset = dailyCare.slice(dailyCareResetStart, dailyCareResetEnd);
-assert.ok(dailyCareResetStart >= 0 && dailyCareResetEnd > dailyCareResetStart, "Daily Care has an explicit active-person reset handler");
-assert.match(dailyCareReset, /setCareItems\(\[\]\)/, "Daily Care clears prior care items when the active person changes");
-assert.match(dailyCareReset, /setHistoryItems\(\[\]\)/, "Daily Care clears prior history when the active person changes");
-assert.match(dailyCareReset, /setReady\(false\)/, "Daily Care blocks the previous person’s view while the new session loads");
-assert.match(dailyCare, /addEventListener\("personIdChanged", resetForSessionChange\)/, "Daily Care listens for active-person changes");
+assert.match(currentUnderstanding, /projection\.schema_status !== "complete"[\s\S]*?missing_required_sources[\s\S]*?missing_optional_sources[\s\S]*?failed_sources/, "the Care Record detects incomplete retrieval instead of treating partial results as complete");
+assert.match(currentUnderstanding, /We couldn’t load all of the available care information\. The picture shown may be incomplete/, "a partial current-care projection is explained in plain language");
+assert.match(currentUnderstanding, /window\.addEventListener\("personIdChanged", refreshAfterSessionChange\)/, "the Care Record reloads when the active person changes");
+assert.match(currentUnderstanding, /personIdRef\.current && \(personIdRef\.current !== scopedPersonId \|\| caregiverIdRef\.current !== session\.caregiver\.id\)[\s\S]*?setProjection\(null\)[\s\S]*?setAssessment\(null\)/, "the Care Record clears the previous person's projection and assessment before showing a new care scope");
