@@ -134,6 +134,8 @@ try {
   await page.waitForURL(/\/workspace\/care-continuity(?:\?|$)/);
   const documentsLink = page.locator(".care-information-directory")
     .getByRole("link", { name: "Documents", exact: true });
+  assert.equal(await documentsLink.getAttribute("aria-describedby"), "care-information-documents-description",
+    "Documents navigation must retain its explanatory accessible description");
   try {
     await page.getByRole("heading", { name: "Explore care information", exact: true })
       .waitFor({ state: "visible", timeout: 30_000 });
