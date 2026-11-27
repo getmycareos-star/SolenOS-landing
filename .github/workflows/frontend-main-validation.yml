@@ -46,6 +46,8 @@ jobs:
         run: npm ci
       - name: Verify caregiver-facing language before other checks
         run: npm run verify:caregiver-ui-language-all
+      - name: Verify shared first-use orientation and consent contract
+        run: npm run verify:first-use-orientation
 
       - name: Verify production telemetry cannot fall back to process memory
         run: npm run verify:telemetry-production-fail-closed
