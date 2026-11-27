@@ -38,9 +38,9 @@ Use the same Today route. Show a brief “Welcome back” orientation with the s
 
 ## Consent and trust
 
-Required privacy and safety acknowledgements remain mandatory. The existing consent contract records the acknowledgement against the current person and caregiver identity, including the current terms version. The shared workspace shell checks the server's consent status and presents the existing acknowledgement form inline when it is required. The same gate applies to direct navigation to workspace routes; failure to verify consent fails closed.
+Preserve the existing consent model; do not introduce a blanket privacy checkbox or consent overlay before the caregiver can enter Today. The public Terms and Privacy pages remain accessible from the product. Consent is checked at the specific actions and data-processing paths that require it. In-app improvement feedback is one such path: the backend resolves the active bearer session, verifies that the consent belongs to that person and caregiver, requires the required privacy/safety acknowledgements, and separately requires explicit improvement-feedback opt-in. A direct API request cannot bypass those checks.
 
-The required acknowledgement does not enable optional improvement feedback. That preference remains separate, explicit, and off unless the caregiver chooses it in Privacy settings. Consent must not be silently inherited from another caregiver or care recipient. Terms and Privacy remain accessible.
+The optional improvement preference remains separate, explicit, revocable, and off unless the caregiver chooses it in Privacy settings. Consent must not be silently inherited from another caregiver or care recipient. A failed consent check must not produce a successful-looking feedback receipt or block access to unrelated Care Record content.
 
 ## Feedback
 
@@ -59,7 +59,7 @@ The current anonymous-session bearer credential is stored in browser storage. If
 - No repeated recipient questions.
 - No medical questionnaire before access.
 - No local-only onboarding completion state.
-- No bypass of required consent through workspace route navigation.
+- No blanket consent gate before workspace entry; enforce consent on the protected actions that require it.
 - No false success when persistence fails.
 - No caregiver-facing technical jargon.
 
