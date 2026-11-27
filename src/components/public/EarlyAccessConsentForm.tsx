@@ -108,14 +108,16 @@ export function EarlyAccessConsentForm({
           aria-required="true"
         />
         <span>
-          I agree to the SolenOS{" "}
+          I have read and accept the SolenOS{" "}
           <Link href="/terms" target="_blank" rel="noopener noreferrer">
             Terms of Service
           </Link>{" "}
-          and confirm that I have read and understand the{" "}
+          and{" "}
           <Link href="/privacy" target="_blank" rel="noopener noreferrer">
             Privacy Policy
-          </Link>.
+          </Link>. I understand SolenOS does not provide medical or emergency advice,
+          care information is not sold or used for advertising, and people I trust
+          who have access can add notes to this Care Record.
         </span>
       </label>
 
