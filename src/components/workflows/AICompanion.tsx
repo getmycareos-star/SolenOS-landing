@@ -337,6 +337,39 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       && requestScopeSequence === conversationScopeSequenceRef.current
       && (!storageKey || activeCompanionConversationStorageKey() === storageKey)
     const restoreConversation = async () => {
+      let recoveredPendingDraft = false
+      // Recover the tab's pending draft before authentication/bootstrap. An
+      // expired or revoked session must not prevent the caregiver from seeing
+      // the exact message that was interrupted.
+      try {
+        const cachedPersonId = window.localStorage.getItem('solenos_backend_person_id')
+        const cachedCaregiverId = window.localStorage.getItem('solenos_backend_caregiver_id')
+        if (cachedPersonId && cachedCaregiverId) {
+          const pendingKey = pendingCompanionTurnStorageKey(cachedPersonId, cachedCaregiverId)
+          const pendingRaw = window.sessionStorage.getItem(pendingKey)
+          if (pendingRaw) {
+            const pending = JSON.parse(pendingRaw) as { client_turn_id?: unknown; text?: unknown }
+            if (
+              typeof pending.client_turn_id === 'string'
+              && pending.client_turn_id.length > 0
+              && pending.client_turn_id.length <= 36
+              && typeof pending.text === 'string'
+              && pending.text.trim().length > 0
+              && pending.text.length <= 4000
+            ) {
+              pendingTurnId.current = pending.client_turn_id
+              pendingTurnText.current = pending.text
+              setInput(pending.text)
+              setRequestError('Your last message may not have received a response. We kept it on this device. Restore access to the same care record before retrying.')
+              recoveredPendingDraft = true
+            } else {
+              window.sessionStorage.removeItem(pendingKey)
+            }
+          }
+        }
+      } catch {
+        // Storage may be unavailable; the server remains authoritative.
+      }
       try {
         const session = await ensureAnonymousSession()
         const nextStorageKey = companionConversationStorageKey(session.person.id, session.caregiver.id)
@@ -347,26 +380,6 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         ) return
         storageKey = nextStorageKey
         conversationScopeRef.current = storageKey
-        // Recover an interrupted draft independently of whether the server had
-        // already created a conversation for it.
-        try {
-          const pendingKey = pendingCompanionTurnStorageKey(session.person.id, session.caregiver.id)
-          const pendingRaw = window.sessionStorage.getItem(pendingKey)
-          if (pendingRaw) {
-            const pending = JSON.parse(pendingRaw) as { client_turn_id?: unknown; text?: unknown }
-            if (typeof pending.client_turn_id === 'string' && pending.client_turn_id.length <= 36
-              && typeof pending.text === 'string' && pending.text.trim().length > 0 && pending.text.length <= 4000) {
-              pendingTurnId.current = pending.client_turn_id
-              pendingTurnText.current = pending.text
-              setInput(pending.text)
-              setRequestError('Your last message may not have received a response. Try again to safely resume it.')
-            } else {
-              window.sessionStorage.removeItem(pendingKey)
-            }
-          }
-        } catch {
-          // Recovery storage is optional; server-backed history remains available.
-        }
         let savedSessionId: string | null = null
         try {
           savedSessionId = window.localStorage.getItem(storageKey)
@@ -442,6 +455,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           ? { before: response.next_before, before_id: response.next_before_id } : null)
 
       } catch (error) {
+        if (recoveredPendingDraft && isCurrentRestore()) {
+          setRequestError('Your last message is still saved on this device. The care session could not be restored. Sign in to or restore the same care record before retrying; SolenOS will not create a different record.')
+        }
         if (error instanceof ApiResponseError && error.status === 404 && storageKey && isCurrentRestore()) {
           try {
             window.localStorage.removeItem(storageKey)
