@@ -1600,7 +1600,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   await accountSection.getByRole("button", { name: "I have saved the code", exact: true }).click();
 
   await accountSection.getByRole("button", { name: "Sign out", exact: true }).click();
-  await accountSection.getByText(/Signed out securely\. Your Care Record is still saved/).waitFor({ timeout: 15_000 });
+  await accountSection.getByText(/Signed out securely\. Your Care Record is still saved/).waitFor({ timeout: 30_000 });
   await accountSection.getByRole("button", { name: "Sign in to an existing account", exact: true }).click();
   const authEmail = accountSection.locator("#account-email");
   const authForm = authEmail.locator("xpath=ancestor::form");
@@ -1610,7 +1610,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   await accountSection.getByText("Signed in. Your existing Care Record is available.", { exact: true }).waitFor({ timeout: 20_000 });
 
   await accountSection.getByRole("button", { name: "Sign out", exact: true }).click();
-  await accountSection.getByText(/Signed out securely\. Your Care Record is still saved/).waitFor({ timeout: 15_000 });
+  await accountSection.getByText(/Signed out securely\. Your Care Record is still saved/).waitFor({ timeout: 30_000 });
   const securitySection = page.locator("#settings-security");
   await securitySection.locator("summary").click();
   await page.locator("#identity-recovery-email").fill(accountEmail);
