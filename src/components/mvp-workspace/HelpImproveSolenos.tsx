@@ -3,7 +3,7 @@
 import { apiUrl } from "@/lib/api-url";
 import { ensureAnonymousSession } from "@/api/client";
 import { caregiverSafeErrorMessage } from "@/lib/caregiver-language";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   GLOBAL_FEEDBACK_LABEL,
   GLOBAL_FEEDBACK_OPTIONS,
@@ -26,9 +26,11 @@ export function HelpImproveSolenos({ compact }: Props) {
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const submissionInFlightRef = useRef(false);
 
   const submit = useCallback(async () => {
-    if (saving) return;
+    if (saving || submissionInFlightRef.current) return;
+    submissionInFlightRef.current = true;
     setSaving(true);
     setSubmitError(null);
     try {
@@ -55,6 +57,8 @@ export function HelpImproveSolenos({ compact }: Props) {
         feedback_category: option,
         message: note.trim() || undefined,
         source: "early_access_feedback",
+        app_version: "0.1.0",
+        route: window.location.pathname,
       });
       const res = await fetch(apiUrl("/api/v1/feedback"), {
         method: "POST",
@@ -80,6 +84,7 @@ export function HelpImproveSolenos({ compact }: Props) {
         error instanceof Error ? error.message : caregiverSafeErrorMessage(),
       );
     } finally {
+      submissionInFlightRef.current = false;
       setSaving(false);
     }
   }, [note, option, saving]);
