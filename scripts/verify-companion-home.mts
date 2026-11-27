@@ -64,7 +64,8 @@ assert.match(documents, /handleFiles/, "uploaded and captured files must enter t
 assert.match(documents, /saveReviewedPages/, "the library retains original-file persistence");
 assert.match(documents, /saveReviewedPages/, "the library retains original-file persistence");
 assert.match(documents, /Save your files/);
-assert.match(documents, /SolenOS will keep reading them even if you leave/, "saving confirms that processing continues after the original upload is complete");
+assert.match(documents, /SolenOS keeps the original and reads it in the background/, "saving confirms that original files are preserved and processing continues after upload");
+assert.match(documents, /Review each suggested detail before it is added to your Care Record/, "document-derived details remain caregiver-reviewed before entering the Care Record");
 assert.match(documentReview, /documentExtractionIsComplete\(analysis\)\s*\?\s*analysis\.observations\.map/, "document candidates must remain hidden until extraction completeness is verified across all pages");
 assert.match(documentReview, /We couldn\'t read every page, so there are no details to review yet/, "caregivers must be told why incomplete documents cannot be reviewed");
 assert.match(documents, /saveReviewedPages/);
