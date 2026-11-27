@@ -68,12 +68,20 @@ export function FirstUseOrientation() {
       setRecipientName(hasNamedRecipient ? saved.name!.trim() : "");
       setRelationship(hasExplicitRelationship ? saved.relationship!.trim() : "");
 
-      // Existing history or an explicitly saved recipient profile is stronger
-      // evidence of a returning caregiver than any device-local visit flag.
-      const hasPriorCareSetup = hasCareHistory || hasNamedRecipient ||
-        hasExplicitRelationship || hasSavedCareContext;
-      if (hasPriorCareSetup && !saved.first_use_orientation_completed_at) {
-        await postJSON("/care-profile/orientation-complete", {});
+      // A saved recipient with an empty LCR still needs first-use guidance.
+      // Only existing care history or a server completion timestamp identifies a return.
+      if (hasCareHistory && !saved.first_use_orientation_completed_at) {
+        const completion = await postJSON("/care-profile/orientation-complete", {}) as {
+          completed?: boolean;
+          completed_at?: string | null;
+        };
+        if (completion.completed !== true || !completion.completed_at) {
+          throw new Error("The server did not confirm orientation completion.");
+        }
+        setProfile((current) => ({
+          ...current,
+          first_use_orientation_completed_at: completion.completed_at,
+        }));
       }
       setLoadState("ready");
     } catch {
@@ -86,11 +94,7 @@ export function FirstUseOrientation() {
     void load();
   }, [load]);
 
-  const completed = Boolean(profile?.first_use_orientation_completed_at) ||
-    hasCareHistory ||
-    Boolean(profile?.name?.trim() && profile.name.trim() !== "Care recipient") ||
-    Boolean(profile?.relationship?.trim() && profile.relationship.trim() !== "Family") ||
-    Boolean(profile?.condition?.trim());
+  const completed = Boolean(profile?.first_use_orientation_completed_at) || hasCareHistory;
 
   const finish = useCallback(async (destination?: string) => {
     if (saving || !profile) return;
@@ -107,10 +111,16 @@ export function FirstUseOrientation() {
         }) as CareProfile;
         setProfile((current) => ({ ...current, ...saved }));
       }
-      await postJSON("/care-profile/orientation-complete", {});
+      const completion = await postJSON("/care-profile/orientation-complete", {}) as {
+        completed?: boolean;
+        completed_at?: string | null;
+      };
+      if (completion.completed !== true || !completion.completed_at) {
+        throw new Error("The server did not confirm orientation completion.");
+      }
       setProfile((current) => ({
         ...current,
-        first_use_orientation_completed_at: new Date().toISOString(),
+        first_use_orientation_completed_at: completion.completed_at,
       }));
       if (destination) {
         router.push(destination);
@@ -122,7 +132,20 @@ export function FirstUseOrientation() {
     }
   }, [profile, recipientName, relationship, router, saving]);
 
-  if (recordLoadError || loadState === "loading") return null;
+  if (recordLoadError) {
+    return (
+      <section className="first-use-status" role="status" aria-live="polite">
+        <p>Reconnect to check your saved care history. We won&apos;t assume this is a new care record while your information is unavailable.</p>
+        <button type="button" className="workspace-secondary" onClick={() => window.location.reload()}>
+          Retry connection
+        </button>
+      </section>
+    );
+  }
+
+  if (loadState === "loading") {
+    return <p className="first-use-hint" role="status">Checking your saved care details…</p>;
+  }
 
   if (loadState === "error") {
     return (
@@ -137,13 +160,20 @@ export function FirstUseOrientation() {
 
   if (completed) {
     return (
-      <aside className="early-access-compact" aria-label="SolenOS early access">
-        <div>
-          <span className="early-access-badge">Early Access</span>
-          <p>SolenOS is still being tested. Some features may change as we improve it with caregiver feedback.</p>
+      <section className="first-use-returning" aria-label="Returning caregiver">
+        <div className="first-use-returning-welcome">
+          <span className="first-use-brand">Welcome back</span>
+          <h2>{recipientName ? "Care for " + recipientName : "Your care record is ready."}</h2>
+          <p>Your saved care information is below. You can continue where you left off.</p>
         </div>
-        <HelpImproveSolenos compact />
-      </aside>
+        <aside className="early-access-compact" aria-label="SolenOS early access">
+          <div>
+            <span className="early-access-badge">Early Access</span>
+            <p>SolenOS is still being tested. Some features may change as we improve it with caregiver feedback.</p>
+          </div>
+          <HelpImproveSolenos compact />
+        </aside>
+      </section>
     );
   }
 
