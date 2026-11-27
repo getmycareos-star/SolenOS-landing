@@ -85,8 +85,9 @@ try {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ caregiver_name: "CI Open Loop caregiver" }),
   });
-  assert.equal(sessionResponse.status, 201, await sessionResponse.text());
-  const seededSession = await sessionResponse.json();
+  const sessionResponseText = await sessionResponse.text();
+  assert.equal(sessionResponse.status, 201, sessionResponseText);
+  const seededSession = JSON.parse(sessionResponseText);
   assert.ok(seededSession.access_token && seededSession.person?.id && seededSession.caregiver?.id);
 
   await page.addInitScript(({ accessToken, expiresAt, personId, caregiverId }) => {
