@@ -55,7 +55,7 @@ const companionSource = readFileSync(
   new URL("../src/components/workflows/AICompanion.tsx", import.meta.url),
   "utf8",
 );
-assert.match(companionSource, /if \(!submittedText \|\| loading \|\| loadingOlderMessages \|\| loadingConversationHistory \|\| sendingRef\.current\) return[\s\S]*?sendingRef\.current = true/,
+assert.match(companionSource, /if \(sendingRef\.current\) return[\s\S]*?if \(!submittedText \|\| loading \|\| loadingOlderMessages \|\| loadingConversationHistory\) return[\s\S]*?sendingRef\.current = true/,
   "Companion must synchronously reject a second submit before React state updates");
 assert.match(companionSource, /finally \{[\s\S]*?sendingRef\.current = false[\s\S]*?setLoading\(false\)/,
   "Companion must release the in-flight guard after success, failure, or scope change");
