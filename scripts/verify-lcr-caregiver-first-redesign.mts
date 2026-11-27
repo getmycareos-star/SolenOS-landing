@@ -41,28 +41,20 @@ assert.match(durableWriteSender, /response\?\.success !== true \|\| response\.id
 assert.match(durableWriteSender, /response\?\.ok !== true \|\| typeof response\.care_event_id !== "string"/, "legacy situation writes require an explicit server event receipt");
 assert.match(durableWriteSender, /The server did not confirm that this care update was saved\./, "uncertain save outcomes remain explicit instead of displaying a false success");
 assert.match(dailyCare, /<section aria-labelledby="daily-care-capture-title"/, "Daily Care keeps the capture workflow directly available");
-assert.match(dailyCare, /<section aria-labelledby="daily-care-today-title"/, "today's saved care updates remain visible without opening history");
-assert.match(dailyCare, /<details className="daily-care-context-panel">\s*<summary><h2 id="daily-care-documents-title">Recent documents<\/h2><\/summary>/, "documents remain accessible but no longer compete with capture on the Daily Care opening screen");
-assert.match(dailyCare, /<details className="daily-care-context-panel">\s*<summary><h2 id="daily-care-follow-ups-title">Needs attention<\/h2><\/summary>/, "unresolved matters are labelled consistently in the update context");
-assert.match(dailyCare, /<details className="daily-care-context-panel">\s*<summary><h2 id="daily-care-since-last-title">Since you last opened Daily Care<\/h2><\/summary>/, "visit analytics stay available without crowding the capture and retrieval workflow");
-assert.match(dailyCare, /<details className="daily-care-context-panel">\s*<summary><h2>Need to review an earlier update\?<\/h2><\/summary>/, "historical navigation remains accessible through progressive disclosure");
-const dailySessionAuthorization = dailyCare.indexOf("void ensureAnonymousSession()");
-const dailySessionReady = dailyCare.indexOf("setReady(true);");
-const dailyFollowUpRead = dailyCare.indexOf('void getJSON("/open-loops?limit=100&offset=0")');
-const dailyContextReads = dailyCare.indexOf("const carePromise = getJSON(");
-assert.ok(
-  dailySessionAuthorization >= 0
-    && dailySessionReady > dailySessionAuthorization
-    && dailyFollowUpRead > dailySessionReady
-    && dailyContextReads > dailySessionReady,
-  "Daily Care capture becomes available after session authorization, then loads follow-ups independently of secondary context reads",
-);
-assert.match(dailyCare, /ensureAnonymousSession\(\)/, "Daily Care requires a valid server-issued session before capture");
-assert.match(dailyCare, /Promise\.all\(\[carePromise, historyPromise\]\)/, "only current care and history determine the page-level context loading state");
-assert.doesNotMatch(dailyCare, /Promise\.allSettled\(\[/, "follow-ups, documents and notification status are not blocked behind unrelated secondary reads");
-assert.match(dailyCare, /void getJSON\("\/documents\/status\?limit=10"\)/, "document status loads independently");
-assert.match(dailyCare, /void getJSON\("\/notifications\?limit=100&offset=0"\)/, "notification status loads independently");
-assert.doesNotMatch(dailyCare, /DailyCareQwen|daily-care\/intelligence\/ask/, "Daily Care has no embedded AI agent");
+assert.match(workspaceHome, /<LCRCurrentUnderstanding showNextStep viewMode="today" \/>/,
+  "Home owns the current-day care overview and saved care updates");
+assert.match(workspaceHome, /View care information/,
+  "Home links to the full Living Care Record without duplicating its workspace");
+assert.match(dailyCare, /<DailyCareRecentDocuments \/>/,
+  "recent documents remain available from Add an update without competing with capture");
+assert.match(dailyCare, /href="\/workspace\/timeline">Open Care history<\/Link>/,
+  "saved care updates remain reachable through the dedicated care-history view");
+assert.match(followUps, /Needs attention now/,
+  "follow-ups are presented in their dedicated workspace rather than mixed into capture");
+assert.match(followUps, /loadAllOpenLoops/,
+  "the follow-up workspace retrieves its saved history independently");
+assert.doesNotMatch(dailyCare, /daily-care-today-title|daily-care-follow-ups-title|daily-care-since-last-title/,
+  "Add an update remains focused on capture rather than duplicating Home, follow-ups or history");
 assert.doesNotMatch(workspaceLayout, /type="checkbox"|ResearchPreviewAckGate|ConsentGatePanel/, "workspace route mounts without a pre-entry checkbox");
 assert.match(styles, /\.lcr-home/, "existing responsive LCR style system is preserved for continuity components");
 assert.doesNotMatch(evidenceReview, /fontSize: 12\b/, "caregiver source review details must not use dense small text");
