@@ -5,6 +5,7 @@ const source = readFileSync("src/app/workspace/documents/page.tsx", "utf8");
 const snapCamera = readFileSync("src/components/mvp-workspace/capture/SnapCameraCapture.tsx", "utf8");
 const scanCamera = readFileSync("src/components/mvp-workspace/capture/ScanDocumentCapture.tsx", "utf8");
 const dailyCare = readFileSync("src/app/workspace/daily-care/page.tsx", "utf8");
+const dailyCareRecentDocuments = readFileSync("src/components/workflows/DailyCareRecentDocuments.tsx", "utf8");
 const review = readFileSync("src/components/DocumentIntelligenceReview.tsx", "utf8");
 const completeness = review.slice(review.indexOf("export function documentExtractionIsComplete"), review.indexOf("type LibraryDocument"));
 assert.match(completeness, /typeof totalPageCount === "number"/, "unknown source page totals must never be treated as complete");
@@ -171,13 +172,14 @@ assert.match(source, /Mark as corrected copy/, "caregivers must be able to expli
 assert.match(source, /selected\.possibleVersionOfEvidenceId && !selected\.evidence\.parent_evidence_id/, "corrected-version clarification must appear only when a possible predecessor is detected");
 assert.match(source, /version-comparison/, "the document view must retrieve source-grounded differences for corrected versions");
 assert.match(source, /A healthcare professional has not confirmed these differences/, "version differences must not be presented as clinical truth");
-assert.match(dailyCare, /\/documents\/status\?limit=10/, "Daily Care must retrieve persisted document processing status");
-assert.match(dailyCare, /Recent documents/, "Daily Care must surface recent document activity");
-assert.match(dailyCare, /You do not need to stay on this screen/, "background processing must not require the caregiver to supervise it");
-assert.match(dailyCare, /could not be read/, "unreadable pages must be reported without treating missing text as empty content");
-assert.match(dailyCare, /Follow-up added to your existing follow-ups/, "accepted document recommendations must be surfaced through the existing follow-up record");
+assert.match(dailyCare, /<DailyCareRecentDocuments \/>/, "Daily Care must surface the recipient-scoped recent document activity panel");
+assert.match(dailyCareRecentDocuments, /getJSON\("\/documents\/intelligence\?limit=10"\)/, "recent document activity must use the existing authenticated document intelligence contract");
+assert.match(dailyCareRecentDocuments, /getJSON\("\/evidence\/" \+ encodeURIComponent\(session\.person\.id\)\)/, "recent originals must be loaded for the active care recipient only");
+assert.match(dailyCareRecentDocuments, /Recent documents/, "Daily Care must surface recent document activity");
+assert.match(dailyCareRecentDocuments, /You do not need to stay on this screen/, "background processing must not require the caregiver to supervise it");
+assert.match(dailyCareRecentDocuments, /could not be read/, "unreadable pages must be reported without treating missing text as empty content");
+assert.match(dailyCareRecentDocuments, /Nothing is added to your Care Record until you approve it/, "document suggestions must remain review-gated");
 assert.match(review, /Saved as a report — not confirmed by a healthcare professional/, "medication candidates must not be presented as verified medication changes");
-assert.match(dailyCare, /Medicine information was saved as a report, but it has not been confirmed/, "Daily Care must distinguish an unconfirmed medication report from a verified care-record change");
 assert.match(source, /let scanPageNumber = 0/, "scan page numbers must not be affected by other file types in the batch");
 
 console.log("✓ crop and straighten are applied to pixels before OCR");
