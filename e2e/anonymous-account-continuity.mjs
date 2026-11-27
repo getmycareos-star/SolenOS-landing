@@ -318,11 +318,20 @@ try {
   ), { timeout: 20_000 });
 
   // Sign in on device B, then register it through the Settings UI.
+  const anonymousTokenBeforeLogin = await pageB.evaluate(() =>
+    localStorage.getItem("solenos_anonymous_access_token")
+  );
+  assert.ok(anonymousTokenBeforeLogin, "device B must begin with its own anonymous session");
   await pageB.getByRole("button", { name: "Sign in to an existing account", exact: true }).click();
   await pageB.locator("#account-email").fill(email);
   await pageB.locator("#account-password").fill(password);
   await pageB.getByRole("button", { name: "Sign in", exact: true }).click();
-  await pageB.getByText("Signed in. Your existing Care Record is available.", { exact: true }).waitFor({ timeout: 20_000 });
+  // The account panel can re-render while the workspace identity changes. Assert
+  // the durable authentication transition rather than a transient local toast.
+  await pageB.waitForFunction((previousToken) => {
+    const currentToken = localStorage.getItem("solenos_anonymous_access_token");
+    return Boolean(currentToken && currentToken !== previousToken);
+  }, anonymousTokenBeforeLogin, { timeout: 20_000 });
   const deviceBSession = await pageB.evaluate(() => localStorage.getItem("solenos_anonymous_access_token"));
   assert.ok(deviceBSession, "device B did not receive an authenticated session");
   await openSettingsSection(pageB, "settings-security", "Devices and account access");
