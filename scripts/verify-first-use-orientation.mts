@@ -36,6 +36,7 @@ assert.match(orientation, /if \\(hasCareHistory && !saved\\.first_use_orientatio
 assert.match(orientation, /Reconnect to check your saved care history/);
 assert.match(orientation, /Welcome back/);
 assert.match(context, /hasCareHistory/);
+assert.match(context, /Boolean\\(existingToken\\)/, "a valid server-issued session must restore workspace entry without a local UI flag");
 assert.doesNotMatch(context, /hasCompletedOnboarding|onboardingPending/);
 
 assert.match(shell, /getJSON\\([\\s\\S]*?\\/consent\\?person_id=/);
