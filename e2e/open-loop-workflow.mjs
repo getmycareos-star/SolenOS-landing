@@ -5,6 +5,16 @@ const frontend = process.env.FRONTEND_URL ?? "http://127.0.0.1:3000";
 const backend = process.env.BACKEND_URL ?? "http://127.0.0.1:8000";
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage();
+const browserErrors = [];
+const failedRequests = [];
+page.on("pageerror", (error) => browserErrors.push(error.message));
+page.on("console", (message) => {
+  if (message.type() === "error") browserErrors.push(message.text());
+});
+page.on("requestfailed", (request) => {
+  const url = new URL(request.url());
+  failedRequests.push({ method: request.method(), path: url.pathname, error: request.failure()?.errorText ?? "unknown" });
+});
 
 let simulatedLostOutcomeResponse = false;
 let simulatedLostActionResponse = false;
@@ -63,6 +73,22 @@ try {
   });
 
   await page.goto(new URL("/workspace/open-loops", frontend).toString(), { waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => Boolean(
+    localStorage.getItem("solenos_anonymous_access_token") &&
+    localStorage.getItem("solenos_backend_person_id") &&
+    localStorage.getItem("solenos_backend_caregiver_id")
+  ), { timeout: 15_000 });
+  await page.waitForFunction(() =>
+    Boolean(document.querySelector(".followups-section") || document.querySelector(".followups-page [role='alert']")),
+    { timeout: 20_000 },
+  );
+  if (await page.locator(".followups-section").count() === 0) {
+    throw new Error("Open Loop page did not load its persisted sections: " + JSON.stringify({
+      pageText: (await page.locator("body").innerText()).slice(0, 2500),
+      browserErrors: browserErrors.slice(-20),
+      failedRequests: failedRequests.slice(-20),
+    }));
+  }
   await page.getByRole("heading", { name: "Needs attention now", exact: true }).waitFor();
   await page.getByRole("heading", { name: "Resolved", exact: true }).waitFor({ timeout: 20_000 });
   await page.getByRole("heading", { name: "No longer relevant", exact: true }).waitFor({ timeout: 20_000 });
@@ -94,12 +120,6 @@ try {
     !followUpSectionPlacement.noLongerRelevantHasResolvedEmptyState,
     "Resolved and No longer relevant must be peer sections with their own empty messages",
   );
-  await page.waitForFunction(() => Boolean(
-    localStorage.getItem("solenos_anonymous_access_token") &&
-    localStorage.getItem("solenos_backend_person_id") &&
-    localStorage.getItem("solenos_backend_caregiver_id")
-  ), { timeout: 15_000 });
-
   const session = await page.evaluate(() => ({
     token: localStorage.getItem("solenos_anonymous_access_token"),
     personId: localStorage.getItem("solenos_backend_person_id"),
