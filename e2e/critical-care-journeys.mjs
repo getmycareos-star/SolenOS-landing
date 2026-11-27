@@ -233,6 +233,7 @@ await record("00a first-use orientation, optional recipient details and action-s
     .waitFor({ state: "visible", timeout: 10_000 });
   await page.getByRole("heading", { name: "Who is this care record for?" })
     .waitFor({ state: "visible", timeout: 10_000 });
+  await verifyMobile(page);
   for (const label of ["Add a care update", "Upload a document", "Ask SolenOS a question"]) {
     assert.equal(await page.getByRole("button", { name: new RegExp(label) }).isVisible(), true,
       `first-use screen must expose ${label}`);
