@@ -12,7 +12,7 @@ const previewGate = fs.readFileSync("src/components/mvp-workspace/ResearchPrevie
 
 assert.doesNotMatch(layout, /WorkspacePrivacyBoundary|ConsentGatePanel|consentState !== "accepted"/,
   "workspace layout must not block entry behind a privacy checkbox");
-assert.match(layout, /<WorkspaceProvider>\s*<ErrorBoundary/,
+assert.match(layout, /<ErrorBoundary[\s\S]*?<WorkspaceProvider>\s*<WorkspaceShellContent>/,
   "workspace provider and shell mount directly");
 assert.doesNotMatch(layout, /type="checkbox"|ResearchPreviewAckGate|EarlyAccessConsentForm/,
   "no acknowledgement checkbox may gate workspace routes");
