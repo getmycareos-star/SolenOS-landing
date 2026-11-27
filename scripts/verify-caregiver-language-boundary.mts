@@ -1334,7 +1334,7 @@ assert.match(companion, /msg\.response_mode !== 'deterministic_product_identity'
   "identity answers must not claim that care records were checked");
 
 assert.equal(caregiverSafeErrorMessage(), "SolenOS couldn’t complete that step. Check your connection and try again. If you were saving information, check whether it appears before trying again.");
-assert.equal(caregiverSafeErrorMessage("Please check the information and try again."), "Please check the information and try again.");
+assert.equal(caregiverSafeErrorMessage("Please check the information and try again."), "SolenOS couldn’t complete that step. Check your connection and try again. If you were saving information, check whether it appears before trying again.");
 assert.equal(caregiverSafeErrorMessage("Database schema unavailable"), "SolenOS couldn’t complete that step. Check your connection and try again. If you were saving information, check whether it appears before trying again.");
 assert.equal(caregiverSafeErrorMessage(new Error("Traceback: SQLAlchemy connection failed")), "SolenOS couldn’t complete that step. Check your connection and try again. If you were saving information, check whether it appears before trying again.");
 assert.equal(caregiverSafeErrorMessage({ detail: "raw internal exception", status_code: 500 }), "SolenOS couldn’t complete that step. Check your connection and try again. If you were saving information, check whether it appears before trying again.");
