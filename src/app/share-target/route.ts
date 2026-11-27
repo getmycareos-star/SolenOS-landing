@@ -21,10 +21,13 @@ async function createPersistentShare(
     });
     const data = (await upstream.json().catch(() => ({}))) as ShareCreateResponse;
     if (!upstream.ok || !data.id) {
-      return {
-        error: data.detail || "The care backend did not confirm the shared content was saved.",
-        status: upstream.ok ? 502 : upstream.status,
-      };
+      const status = upstream.ok ? 502 : upstream.status;
+      const error = status === 401 || status === 403
+        ? "We couldn’t confirm access to your Care Record. Open SolenOS and try sharing again."
+        : status === 413
+          ? "The shared files are too large. Choose fewer or smaller files and try again."
+          : "We couldn’t save the shared content. Open SolenOS and try again.";
+      return { error, status };
     }
     return { id: data.id };
   } catch {
