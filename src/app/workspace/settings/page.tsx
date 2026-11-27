@@ -26,6 +26,9 @@ import { CaregiverAccessPanel } from "@/components/mvp-workspace/CaregiverAccess
 import { clearDurableWriteQueue } from "@/lib/offline-sync/durable-write-queue";
 
 const CARE_RECIPIENT_NAME_STORAGE = "solenos_care_recipient_display_name";
+const ACCOUNT_SIGNED_OUT_NOTICE_STORAGE = "solenos_account_signed_out_notice";
+const ACCOUNT_SIGNED_OUT_NOTICE =
+  "Signed out securely. Your Care Record is still saved. Sign in with the same account on this or another authorized device to access it.";
 
 /** Profile fields are read from and written to the bearer-scoped care record. */
 function ProfileCard() {
@@ -338,6 +341,18 @@ function AccountCard({ onSignedOut }: { onSignedOut: () => void }) {
   const [recoveryCode, setRecoveryCode] = useState("");
   const [rotatingRecoveryCode, setRotatingRecoveryCode] = useState(false);
 
+  useEffect(() => {
+    try {
+      if (window.sessionStorage.getItem(ACCOUNT_SIGNED_OUT_NOTICE_STORAGE) === "1") {
+        setSignedOut(true);
+        setMessage(ACCOUNT_SIGNED_OUT_NOTICE);
+      }
+    } catch {
+      // The notice is best-effort UI continuity; sign-in and server revocation
+      // do not depend on browser session storage being available.
+    }
+  }, []);
+
   const refreshAccount = useCallback(async () => {
     // Do not create a new anonymous care record merely to inspect account status.
     // A returning caregiver without a local token must be able to sign in first.
@@ -373,6 +388,8 @@ function AccountCard({ onSignedOut }: { onSignedOut: () => void }) {
         const result = await createAccount(email, password);
         setAccount(result.account ?? null);
         setRecoveryCode(result.recovery_code);
+        try { window.sessionStorage.removeItem(ACCOUNT_SIGNED_OUT_NOTICE_STORAGE); } catch {}
+        setSignedOut(false);
         setMessage("Account created and linked to your Care Record.");
         setMode("idle");
         setPassword("");
@@ -380,6 +397,7 @@ function AccountCard({ onSignedOut }: { onSignedOut: () => void }) {
       } else if (mode === "login") {
         const result = await signInToAccount(email, password);
         setAccount(result.account);
+        try { window.sessionStorage.removeItem(ACCOUNT_SIGNED_OUT_NOTICE_STORAGE); } catch {}
         setSignedOut(false);
         setMessage("Signed in. Your existing Care Record is available.");
         setMode("idle");
@@ -428,12 +446,13 @@ function AccountCard({ onSignedOut }: { onSignedOut: () => void }) {
       // Revoke on the server before removing the browser's bearer capability.
       // If the network call fails, revokeAnonymousSession leaves credentials intact.
       await revokeAnonymousSession();
+      try { window.sessionStorage.setItem(ACCOUNT_SIGNED_OUT_NOTICE_STORAGE, "1"); } catch {}
       setAccount(null);
       setSignedOut(true);
       setMode("idle");
       setEmail("");
       setPassword("");
-      setMessage("Signed out securely. Your Care Record is still saved. Sign in with the same account on this or another authorized device to access it.");
+      setMessage(ACCOUNT_SIGNED_OUT_NOTICE);
       show("Signed out securely.", "success");
       onSignedOut();
     } catch (e) {
