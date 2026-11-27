@@ -200,7 +200,7 @@ assert.ok(themeOverrides.includes("--theme-field-bg: #18211c"));
 assert.ok(themeOverrides.includes("--theme-warning-fg: #fff0cf"));
 assert.ok(themeOverrides.includes("--theme-action-disabled-fg: #e6eee7") && themeOverrides.includes("button:disabled"));
 assert.ok(dailyCarePage.includes("daily-care-context-panel") && v2Styles.includes(".daily-care-context-panel") && v2Styles.includes("var(--sn-surface)"), "Daily Care capture panels must use the shared theme-aware surface styling");
-assert.ok(dailyCarePage.includes("var(--theme-link)") && !dailyCarePage.includes("#267c78"), "Daily Care focus treatment must use the shared theme link color");
+assert.ok(themeOverrides.includes("outline: 3px solid var(--theme-link)") && themeOverrides.includes(":focus-visible"), "Keyboard focus must use the active theme link color");
 assert.ok(dailyCarePage.includes("var(--theme-field-fg)"));
 assert.ok(quickCheckIn.includes("var(--theme-selected-bg)") && quickCheckIn.includes('className="quick-daily-checkin"'));
 assert.ok(appointmentsPage.includes("appointments-page") && v2Styles.includes(".solenos-chat-main .appointments-page") && v2Styles.includes("var(--sn-muted)"));
