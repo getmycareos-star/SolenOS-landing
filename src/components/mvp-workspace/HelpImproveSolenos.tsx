@@ -48,14 +48,12 @@ export function HelpImproveSolenos({ compact }: Props) {
         throw new Error("Turn on optional improvement feedback in Privacy settings before sending feedback.");
       }
 
-      const helped = option === "Response was helpful";
-      // The backend feedback endpoint currently accepts these as query parameters,
-      // not a JSON body. Persist only deliberate feedback after checking opt-in.
+      // Preserve the caregiver's selected feedback category as-is. These
+      // categories include usability issues and ideas, not only response quality.
       const detail = JSON.stringify({
-        helped_understand: helped,
-        missed: helped ? undefined : option || undefined,
-        expected_understanding: note.trim() || undefined,
-        source: "global_help_improve",
+        feedback_category: option,
+        message: note.trim() || undefined,
+        source: "early_access_feedback",
       });
       const res = await fetch(apiUrl("/api/v1/feedback"), {
         method: "POST",
