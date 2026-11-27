@@ -559,6 +559,34 @@ export function caregiverSafeChangeText(value: unknown): string | null {
   return containsInternalIdentifier || containsEngineLanguage ? null : text;
 }
 
+/**
+ * Translate HTTP failures before their messages can enter caregiver UI.
+ * Raw response details remain available on ApiResponseError.detail for narrow
+ * programmatic conflict handling, but are never copied into Error.message.
+ */
+export function caregiverSafeApiErrorMessage(status: number, error?: unknown): string {
+  if (error && typeof error === "object" && !Array.isArray(error)) {
+    const candidate = error as Record<string, unknown>;
+    const message = candidate.user_message ?? candidate.caregiver_message;
+    if (typeof message === "string") {
+      return caregiverSafeGeneratedText(message) || caregiverSafeErrorMessage();
+    }
+  }
+
+  switch (status) {
+    case 401: return "Your session has expired. Please sign in again.";
+    case 403: return "You don't have permission to view this information.";
+    case 404: return "We couldn't find that information.";
+    case 409: return "This information has changed. Refresh and review the latest details before trying again.";
+    case 422: return "Please check the information and try again.";
+    case 429: return "Please wait a moment and try again.";
+    case 503: return "This service is temporarily unavailable. Please try again shortly.";
+    default: return status >= 500
+      ? "We couldn't complete that request right now. Please try again."
+      : "We couldn't complete that request. Please try again.";
+  }
+}
+
 const CAREGIVER_SAFE_ERROR_FALLBACK = "SolenOS couldn’t complete that step. Check your connection and try again. If you were saving information, check whether it appears before trying again.";
 
 /**
