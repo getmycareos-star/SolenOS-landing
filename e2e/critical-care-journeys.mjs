@@ -1412,6 +1412,12 @@ await record("01c workspace links, browser back, More menu and account form vali
     "Care information stays selected while a nested care destination is open");
 
   await page.getByRole("button", { name: "Open navigation", exact: true }).click();
+  await page.waitForFunction(() => {
+    const host = document.querySelector(".solenos-chat-sidebar-host");
+    const rect = host?.getBoundingClientRect();
+    return host?.classList.contains("is-sidebar-open") === true &&
+      Boolean(rect && rect.left >= -1 && rect.right > 0);
+  }, undefined, { timeout: 5_000 });
   const moreNavigationLink = navigation.locator('a[href="/workspace/more"]');
   const moreNavigationState = await moreNavigationLink.evaluate((element) => {
     const rect = element.getBoundingClientRect();
