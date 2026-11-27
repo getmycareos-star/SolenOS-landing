@@ -93,11 +93,17 @@ function WorkspacePageInner() {
             {CARE_INFORMATION_NAVIGATION.map((item) => {
               const Icon = item.icon;
               return (
-                <Link key={item.id} href={item.href} className="care-information-directory__link">
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  className="care-information-directory__link"
+                  aria-labelledby={`care-information-${item.id}-label`}
+                  aria-describedby={`care-information-${item.id}-description`}
+                >
                   <span className="care-information-directory__icon" aria-hidden="true"><Icon size={19} /></span>
                   <span className="care-information-directory__copy">
-                    <strong>{item.label}</strong>
-                    <span>{item.description}</span>
+                    <strong id={`care-information-${item.id}-label`}>{item.label}</strong>
+                    <span id={`care-information-${item.id}-description`}>{item.description}</span>
                   </span>
                   <span className="care-information-directory__arrow" aria-hidden="true">→</span>
                 </Link>
