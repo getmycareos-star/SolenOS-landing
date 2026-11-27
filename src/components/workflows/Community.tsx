@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
 import { Bookmark, Check, ChevronRight, HeartHandshake, MessageCircle, Search, Send, ShieldCheck, Sparkles, ThumbsUp, Users, X } from 'lucide-react'
-import { getJSON, postJSON, ensureAnonymousSession } from '@/api/client'
+import { ApiResponseError, getJSON, postJSON, ensureAnonymousSession } from '@/api/client'
 import { caregiverSafeAssistantText } from '@/lib/caregiver-language'
 
 type AuthorType = 'peer_caregiver' | 'solenos_verified' | 'professional' | 'professional_pending'
@@ -198,7 +198,7 @@ export default function Community() {
       try {
         result = await postJSON('/community/experience/summary', { observation: query }) as ExperienceResult
       } catch (error) {
-        if (!(error instanceof Error) || !/API 404/i.test(error.message)) throw error
+        if (!(error instanceof ApiResponseError) || error.status !== 404) throw error
         const legacy = await postJSON('/community/experience', { observation: query }) as { matches?: ExperienceMatch[] }
         if (!Array.isArray(legacy?.matches)) throw new Error('No matches')
         setWisdomMatches(legacy.matches.slice(0, 4))
