@@ -16,8 +16,9 @@ const draftRead = restore.indexOf("window.sessionStorage.getItem(pendingKey)");
 const sessionBootstrap = restore.indexOf("await ensureAnonymousSession()");
 assert.ok(draftRead >= 0 && sessionBootstrap > draftRead,
   "pending draft must be restored before session bootstrap can fail");
-assert.match(restore, /recoveredPendingDraft && isCurrentRestore\(\)[\s\S]*?The last message is still saved on this device|Your last message is still saved on this device/,
-  "an expired session must leave a visible recovery message");
+assert.match(restore, /recoveredPendingDraft/);
+assert.match(restore, /Your last message may not have received a response\\. We kept it on this device\\./,
+  "an expired session must leave a visible recovery message before authentication bootstrap");
 assert.match(restore, /pendingTurnId\.current = pending\.client_turn_id[\s\S]*?pendingTurnText\.current = pending\.text[\s\S]*?setInput\(pending\.text\)/,
   "recovery must retain the original idempotency key and exact caregiver text");
 
