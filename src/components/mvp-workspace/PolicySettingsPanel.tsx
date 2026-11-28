@@ -222,7 +222,7 @@ export function PolicySettingsPanel(_props: Props = {}) {
           <h5>What is not shared automatically</h5>
           <ul>
             <li>Your full Care Record or your full care history.</li>
-            <li>Your care notes, uploaded documents, or Ask SolenOS conversations are not automatically sent as feedback.</li>
+            <li>Your care notes, uploaded documents, or Care Assistant conversations are not automatically sent as feedback.</li>
             <li>Your care details are not published, your personal information is not sold, and your information is not used for targeted advertising.</li>
           </ul>
           <p className="panel-muted">
