@@ -232,6 +232,12 @@ assert.match(changeIntelligence, /caregiverSourceText\(source\.description\)/, "
 assert.match(read("../src/app/workspace/timeline/page.tsx"), /caregiverSourceText\(capture\.notes\.trim\(\)\)/, "timeline must preserve exact caregiver notes");
 const dailyCareIntelligence = read("../src/components/workflows/DailyCareQwen.tsx");
 assert.match(dailyCareIntelligence, /caregiverSourceText\(source\.title\)/, "Daily Care retrieval must preserve original source titles");
+assert.match(dailyCareIntelligence, /caregiverSafeGeneratedText\(response\.message\)/,
+  "generated review feedback must pass through the strict caregiver-language boundary");
+assert.doesNotMatch(dailyCareIntelligence, /\bLCR\b/,
+  "caregiver-facing Daily Care copy must say Care Record, not the internal abbreviation");
+assert.match(dailyCareIntelligence, /Approve and add to Care Record/);
+
 const handoff = read("../src/components/workflows/CareHandoffSharing.tsx");
 const claimReview = read("../src/components/ClaimAssessmentPanel.tsx");
 const appointment = read("../src/components/workflows/AppointmentWorkspace.tsx");
