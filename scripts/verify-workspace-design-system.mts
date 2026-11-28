@@ -4,7 +4,6 @@ import { readFileSync } from "node:fs";
 const read = (path: string) => readFileSync(path, "utf8");
 const layout = read("src/app/workspace/layout.tsx");
 const shell = read("src/components/app-shell/WorkspaceShellContent.tsx");
-const appShell = read("src/components/app-shell/AppShell.tsx");
 const workspaceLayout = read("src/app/workspace/layout.tsx");
 const recovery = read("src/components/app-shell/WorkspaceErrorFallback.tsx");
 const breadcrumbs = read("src/components/app-shell/WorkspaceRouteBreadcrumbs.tsx");
