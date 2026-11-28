@@ -372,10 +372,14 @@ assert.match(dailyCare, /<NaturalLanguageDailyUpdate \/>/,
   "Add an update must use the natural-language capture workflow");
 assert.match(dailyCare, /<DailyCareRecentDocuments \/>/,
   "Add an update must surface recent document processing and review states");
-assert.match(dailyCareHistory, /originalText \? `Earlier entry: \$\{originalText\}`/,
+assert.match(dailyCareHistory, /root\.correction_history[\s\S]*?correction\.original_text/,
   "care history must retain the original wording attached to a correction");
-assert.match(dailyCareHistory, /correctedText \? `Correction: \$\{correctedText\}`/,
+assert.match(dailyCareHistory, /correction\.corrected_text/,
   "care history must retain the corrected wording attached to a correction");
+assert.match(dailyCareHistory, /caregiverSourceText\(correction\.original_text\)/,
+  "original caregiver correction text must bypass generated-copy filtering");
+assert.match(dailyCareHistory, /caregiverSourceText\(correction\.corrected_text\)/,
+  "corrected caregiver text must bypass generated-copy filtering");
 assert.match(dailyCareHistory, /return caregiverSourceText\(description\) \|\| "Saved care information"/,
   "plain-text caregiver reports must be rendered as source text, not filtered as assistant output");
 assert.match(dailyCareHistory, /caregiverSafeAssistantText\(event\.source_label\)/,
