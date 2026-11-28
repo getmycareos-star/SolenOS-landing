@@ -205,7 +205,7 @@ function statusFromError(error: unknown): { blocked: boolean; message: string } 
     ? Number((error as { status?: unknown }).status)
     : null;
   if (status === 400 || status === 404 || status === 409 || status === 422) {
-    return { blocked: true, message: `The server needs this update reviewed (HTTP ${status}).` };
+    return { blocked: true, message: "This update needs to be checked before it can be sent." };
   }
   if (status === 401 || status === 403) {
     return { blocked: true, message: "This care session needs to be verified before the update can sync." };
