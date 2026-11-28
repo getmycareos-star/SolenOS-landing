@@ -278,7 +278,7 @@ export default function ClaimAssessmentPanel() {
       } catch {
         if (!cancelled) {
           setDependencies([]);
-          setDependencyError("Another care details could not be loaded. This does not mean there are no related details.");
+          setDependencyError("Related care details could not be loaded. This does not mean there are none.");
         }
       } finally {
         if (!cancelled) setDependencyLoading(false);
