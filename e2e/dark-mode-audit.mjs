@@ -353,6 +353,21 @@ try {
             }
 
             const bodyText = document.body?.innerText?.trim() ?? "";
+            const accessibilityText = [...document.querySelectorAll(
+              "[alt], [aria-label], [aria-description], [aria-placeholder], [aria-roledescription], [aria-valuetext], [title], [placeholder]",
+            )].map((element) => [
+              element.getAttribute("alt"),
+              element.getAttribute("aria-label"),
+              element.getAttribute("aria-description"),
+              element.getAttribute("aria-placeholder"),
+              element.getAttribute("aria-roledescription"),
+              element.getAttribute("aria-valuetext"),
+              element.getAttribute("title"),
+              element.getAttribute("placeholder"),
+            ].filter(Boolean).join(" ")).join(" ");
+            const caregiverCopy = bodyText + " " + accessibilityText;
+            const internalLanguage = /\\b(?:backend|frontend|endpoint|payload|schema|database|postgres(?:ql)?|sqlite|qwen|fastapi|sqlalchemy|alembic|tika|tesseract|telemetry|inference pipeline|retrieval pipeline|extraction pipeline|migration|idempotent|epistemic(?: status| state)?|provenance|reconciliation|assertion(?: record| candidate)?|source[_ -]?id|record[_ -]?id|evidence[_ -]?id|claim[_ -]?id|person[_ -]?id|caregiver[_ -]?id|document[_ -]?id|appointment[_ -]?id|handoff[_ -]?id|request[_ -]?id|confidence score|audit trail|diagnostic trace|machine-readable metadata|assessment coverage|source attribution|handoff history|data integrity|care continuity|longitudinal|open loops|\\bapi\\b|\\bjson\\b|\\bocr\\b|\\buuid\\b|sha-?256|http\\s*\\d{3}|(?:awaiting|pending|processing|failed|unavailable|partial|rejected|accepted|verified|unverified|conflicting|missing|withdrawn|superseded)_[a-z0-9_]+)\\b/gi;
+            const caregiverLanguageLeaks = [...new Set(caregiverCopy.match(internalLanguage) || [])];
             const horizontalOverflowPx = Math.max(
               document.documentElement.scrollWidth,
               document.body?.scrollWidth ?? 0,
@@ -372,6 +387,7 @@ try {
               title: document.title,
               bodyTextLength: bodyText.length,
               bodyTextPreview: bodyText.slice(0, 240),
+              caregiverLanguageLeaks,
               isNotFound: /\b404\b|page not found|not found/i.test(bodyText),
               hasWorkspaceMain: Boolean(document.querySelector("main,[role='main']")),
               hasWorkspaceNav: Boolean(document.querySelector("nav[aria-label='Primary navigation']")),
@@ -407,6 +423,9 @@ try {
             ...(routePath === "/workspace" && !rendered.appointmentSummaryText.includes("Responsive audit appointment") ? [{ kind: "appointment_summary_data_missing" }] : []),
             ...(rendered.horizontalOverflowPx > 1 ? [{ kind: "horizontal_overflow", pixels: rendered.horizontalOverflowPx }] : []),
             ...rendered.clippedPrimaryActions.map((selector) => ({ kind: "clipped_primary_action", selector })),
+            ...(rendered.caregiverLanguageLeaks.length
+              ? [{ kind: "caregiver_language_leak", terms: rendered.caregiverLanguageLeaks }]
+              : []),
             ...(routePath === "/workspace/handoffs" && rendered.handoffsHeading !== "Care handoffs"
               ? [{ kind: "missing_handoffs_heading", actual: rendered.handoffsHeading }]
               : []),
@@ -425,6 +444,7 @@ try {
             title: rendered.title,
             bodyTextLength: rendered.bodyTextLength,
             bodyTextPreview: rendered.bodyTextPreview,
+            caregiverLanguageLeaks: rendered.caregiverLanguageLeaks,
             hasWorkspaceMain: rendered.hasWorkspaceMain,
             hasWorkspaceNav: rendered.hasWorkspaceNav,
             hasAppointmentSummary: rendered.hasAppointmentSummary,
