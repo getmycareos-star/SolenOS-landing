@@ -132,7 +132,7 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
 
   async function submitResolution() {
     if (!selected || rationale.trim().length < 3) {
-      setError("Select a conflict and provide a clear resolution rationale.");
+      setError("Choose the reports that differ and explain what you found.");
       return;
     }
     if (status === "partially_resolved" && (!scope.trim() || !unresolvedRemainder.trim() || evidenceIds.length === 0)) {
@@ -154,7 +154,7 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
         unresolved_remainder: status === "partially_resolved" ? unresolvedRemainder.trim() || null : null,
         evidence_ids: evidenceIds,
       });
-      setNotice("What did you find? saved. Only the part described as reviewed is marked as resolved; related details remain unchanged.");
+      setNotice("Your review was saved. Only the part you described is marked as reviewed. Related details have not changed.");
       setRationale("");
       await loadRecords();
       // Refresh the history for the exact conflict just changed. Do not rely on
@@ -173,7 +173,7 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
       A newer date or several similar reports do not automatically mean one version is right. Every review needs notes or documents to check, and a reason. If you can only check part of the information, say exactly which part.
     </p>
     {loading && <p role="status">Loading reports that differ…</p>}
-    {error && <p role="alert" style={{ color: "var(--error)", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{error} <button type="button" style={button} onClick={() => void loadRecords()} disabled={loading}>Retry load</button></p>}
+    {error && <p role="alert" style={{ color: "var(--error)", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{error} <button type="button" style={button} onClick={() => void loadRecords()} disabled={loading}>Try again</button></p>}
     {!loading && !error && conflicts.length === 0 && <p>No reports that disagree are saved here right now. This does not mean no disagreement exists elsewhere.</p>}
     {!loading && !error && conflicts.length > 0 && <>
       <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 9 }}>Reports that do not match
