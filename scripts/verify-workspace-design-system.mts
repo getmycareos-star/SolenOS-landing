@@ -5,6 +5,7 @@ const read = (path: string) => readFileSync(path, "utf8");
 const layout = read("src/app/workspace/layout.tsx");
 const shell = read("src/components/app-shell/WorkspaceShellContent.tsx");
 const appShell = read("src/components/app-shell/AppShell.tsx");
+const workspaceLayout = read("src/app/workspace/layout.tsx");
 const recovery = read("src/components/app-shell/WorkspaceErrorFallback.tsx");
 const breadcrumbs = read("src/components/app-shell/WorkspaceRouteBreadcrumbs.tsx");
 const rootLayout = read("src/app/layout.tsx");
@@ -31,8 +32,10 @@ assert.match(recovery, /"use client"[\s\S]*?We cannot confirm whether your last 
 
 assert.match(shell, /function CareContextBar[\s\S]*?recordLoadError[\s\S]*?No care details yet[\s\S]*?Add an update/,
   "care context distinguishes unavailable data from an empty record and provides a useful next step");
-assert.match(appShell, /function WorkspaceEntryGate[\s\S]*?entryReady[\s\S]*?Preparing your care workspace/,
-  "workspace entry remains gated until bootstrap resolves");
+assert.match(workspaceLayout, /<WorkspaceProvider>[\s\S]*?<WorkspaceShellContent>\{children\}<\/WorkspaceShellContent>[\s\S]*?<\/WorkspaceProvider>/,
+  "the workspace shell remains mounted inside the provider that owns session and care-scope state");
+assert.match(shell, /<AppShell>[\s\S]*?\{children\}[\s\S]*?<\/AppShell>/,
+  "the application shell presents workspace navigation without an additional onboarding wall");
 assert.match(shell, /<GlobalDisplayPreferences\s*\/>/,
   "global display preferences remain mounted in the workspace");
 assert.match(breadcrumbs, /solenos-workspace-breadcrumb-current/);
