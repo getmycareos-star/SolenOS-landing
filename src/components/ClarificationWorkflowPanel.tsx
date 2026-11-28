@@ -82,9 +82,9 @@ function answererLabel(role?: string | null): string {
   const labels: Record<string, string> = {
     caregiver: "You, as the caregiver",
     person_receiving_care: "Person receiving care",
-    reporting_caregiver: "Caregiver who shared the report",
+    reporting_caregiver: "Caregiver who shared this information",
     other_caregiver: "Another caregiver",
-    professional: "Care professional",
+    professional: "Healthcare professional",
     not_known: "Not known",
   };
   return role ? labels[role] || "Not known" : "Not known";
