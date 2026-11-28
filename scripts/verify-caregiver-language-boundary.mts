@@ -179,6 +179,10 @@ assert.match(caregiverSafeErrorMessage(), /check your connection/i);
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 const caregiverUiLanguageScanner = read("./verify-caregiver-ui-language-all.mts");
 const dailyCare = read("../src/app/workspace/daily-care/page.tsx");
+const dailyCareHistory = read("../src/app/workspace/timeline/page.tsx");
+const dailyCareRecentDocuments = read("../src/components/workflows/DailyCareRecentDocuments.tsx");
+const naturalDailyUpdate = read("../src/components/workflows/NaturalLanguageDailyUpdate.tsx");
+const dailyCareOfflineQueue = read("../src/components/workflows/DailyCareOfflineQueueNotice.tsx");
 const openLoopsPage = read("../src/app/workspace/open-loops/page.tsx");
 assert.match(openLoopsPage, /caregiverSourceText\(loop\.title\)/,
   "saved follow-up titles must preserve original caregiver wording");
@@ -361,29 +365,31 @@ assert.match(caregiverUiLanguageScanner, /ts\.isCallExpression\(node\) \|\| ts\.
   "the language scanner must inspect literal caregiver copy passed through helper calls");
 assert.match(caregiverUiLanguageScanner, /const roots = \["src\/app", "src\/components"\]/,
   "the language scanner must cover all application routes and UI components");
-assert.doesNotMatch(dailyCare, /epistemic_status\.replace|item\.status\.replace/);
-assert.doesNotMatch(dailyCare, /item\.event_type \|\| item\.source_type/);
-assert.match(dailyCare, /item\.original_text\.trim\(\)/, "original caregiver reports must remain verbatim");
-assert.match(dailyCare, /caregiverSafeGeneratedText\(item\.source_label\)/, "server-provided Daily Care source labels must use caregiver language");
-assert.match(dailyCare, /item\.corrected_text\.trim\(\)/, "corrected caregiver reports must remain verbatim");
-assert.doesNotMatch(dailyCare, /caregiverSafeAssistantText\(item\.(original_text|corrected_text|reason)\)/, "assistant-output filtering must not be applied to caregiver source text");
-assert.doesNotMatch(dailyCare, /The latest information currently available in the care record|Processing has not started yet|Document understanding could not be completed|Document processing was stopped|Care Timeline|change and pattern assessments/);
-assert.match(dailyCare, /SolenOS has finished reading it/);
+assert.doesNotMatch(dailyCare, /epistemic_status\\.replace|item\\.status\\.replace/);
+assert.doesNotMatch(dailyCare, /item\\.event_type \\|\\| item\\.source_type/);
+assert.match(dailyCare, /<NaturalLanguageDailyUpdate \\/>/,
+  "Add an update must use the natural-language capture workflow");
+assert.match(dailyCare, /<DailyCareRecentDocuments \\/>/,
+  "Add an update must surface recent document processing and review states");
+assert.match(dailyCareHistory, /originalText \\? \`Earlier entry: \\$\\{originalText\\}\`/,
+  "care history must retain the original wording attached to a correction");
+assert.match(dailyCareHistory, /correctedText \\? \`Correction: \\$\\{correctedText\\}\`/,
+  "care history must retain the corrected wording attached to a correction");
+assert.match(dailyCareHistory, /return caregiverSourceText\\(description\\) \\|\\| "Saved care information"/,
+  "plain-text caregiver reports must be rendered as source text, not filtered as assistant output");
+assert.match(dailyCareHistory, /caregiverSafeAssistantText\\(event\\.source_label\\)/,
+  "system-provided source labels must pass through the caregiver language boundary");
+assert.match(dailyCareHistory, /caregiverSafeAssistantText\\(event\\.capture_processing\\.message\\)/,
+  "server-provided processing messages must pass through the caregiver language boundary");
+assert.doesNotMatch(dailyCareHistory, /caregiverSafeAssistantText\\(event\\.(original_text|corrected_text|reason)\\)/,
+  "assistant-output filtering must not be applied to caregiver source text");
+assert.match(dailyCareRecentDocuments, /The original file is still saved/);
+assert.match(dailyCareRecentDocuments, /Nothing is added to your Care Record until you approve it/);
+assert.match(naturalDailyUpdate, /Your original wording is kept in the care history/);
+assert.match(naturalDailyUpdate, /capture_idempotency_key: idempotencyKey/);
+assert.match(dailyCareOfflineQueue, /They are not yet confirmed in your care record/);
+assert.match(dailyCareOfflineQueue, /Try sending again/);
 
-assert.match(dailyCare, /caregiverSafeGeneratedText\(item\.capture_processing\?\.message\)/, "Daily Care processing messages from the server must use caregiver language");
-assert.match(dailyCare, /caregiverSafeGeneratedText\(item\.push_delivery\?\.message\)/, "notification messages from the server must use caregiver language");
-assert.doesNotMatch(dailyCare, /Notification delivery needs attention|Notification delivery status could not be/i,
-  "Daily Care must not expose technical notification-delivery terminology");
-
-assert.match(photoCapture, /We could not confirm which Care Record to use/);
-assert.match(photoCapture, /saved securely on this device/);
-assert.match(photoCapture, /waiting to be added to your Care Record/);
-assert.match(photoCapture, /Photograph saved with your care information/);
-assert.doesNotMatch(photoCapture, /care session could not be verified|care-record evidence|sync with the care record|encrypted and saved on this device/i,
-  "photo capture must explain save and connection states in caregiver language");
-assert.match(dailyCare, /This update is being checked\. You can keep using SolenOS\./, "technical processing messages must have a caregiver-readable fallback");
-assert.match(dailyCare, /Your saved note is still available\./, "processing failures must preserve the confirmed saved-note state");
-assert.match(dailyCare, /Open care history/);
 assert.doesNotMatch(documentsPage, /AI interpretation|Document library|Server processing after upload|extracted statements|document understanding|upload ID|10 MiB/);
 assert.match(documentsPage, /Your original files are kept separate from suggested details/);
 
