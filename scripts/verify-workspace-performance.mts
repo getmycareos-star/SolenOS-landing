@@ -38,7 +38,7 @@ assert.match(workspace, /solenos\.journey\.landing-to-first-care/, "landing-to-c
 
 assert.doesNotMatch(companion, /AppointmentWorkspace|appointment-workspaces/, "AI Companion must not own or load the appointment workflow");
 assert.match(appointmentsPage, /import AppointmentWorkspace/, "the appointment workflow must be owned by its dedicated route");
-assert.match(appointmentsPage, /<AppointmentWorkspace \/>/, "the dedicated appointment route must keep the persisted workflow reachable");
+assert.match(appointmentsPage, /<AppointmentWorkspace key=\{scopeEpoch\} \/>/, "the dedicated appointment route must keep the persisted workflow reachable and remount it when the active person changes");
 assert.match(appointment, /appointment-workspaces/, "appointment workflow must remain connected to its persisted backend resource");
 
 assert.match(shell, /prefetch=\{false\}/, "secondary routes must not prefetch on initial workspace load");
