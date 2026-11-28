@@ -1,6 +1,7 @@
 "use client";
 
 import { Component, type ReactNode } from "react";
+import { caregiverSafeGeneratedText } from "@/lib/caregiver-language";
 
 type ErrorBoundaryProps = {
   children: ReactNode;
@@ -46,10 +47,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           color: "#991b1b",
         }}>
           <p style={{ fontWeight: 600, marginBottom: "8px" }}>
-            {this.props.name ?? "This section"} encountered an error
+            {caregiverSafeGeneratedText(this.props.name) || "This section"} could not load.
           </p>
           <p style={{ fontSize: "14px", opacity: 0.8 }}>
-            Please refresh the page or try again later.
+            Please refresh the page or try again in a moment.
           </p>
           <button
             type="button"
@@ -65,7 +66,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               cursor: "pointer",
             }}
           >
-            Retry
+            Try again
           </button>
         </div>
       );
