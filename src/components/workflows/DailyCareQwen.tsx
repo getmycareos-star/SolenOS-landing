@@ -133,9 +133,9 @@ export default function DailyCareQwen() {
     <section className="daily-care-qwen" aria-labelledby="daily-care-qwen-title">
       <div className="daily-care-qwen__heading">
         <div>
-          <p className="daily-care-qwen__eyebrow">DAILY CARE INTELLIGENCE</p>
+          <p className="daily-care-qwen__eyebrow">DAILY CARE</p>
           <h2 id="daily-care-qwen-title">Ask about the care history</h2>
-          <p>SolenOS looks through the saved care history and shows the information behind its answer. Suggestions are not confirmed care facts.</p>
+          <p>SolenOS looks through the saved care history and shows the information behind its answer. Suggestions are ideas to review, not saved care information.</p>
         </div>
       </div>
 
