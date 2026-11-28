@@ -263,6 +263,7 @@ const careCapture = read("../src/components/CareCapture.tsx");
 const feedbackPrompt = read("../src/components/mvp-workspace/UnderstandingFeedbackPrompt.tsx");
 const appShell = read("../src/components/app-shell/AppShell.tsx");
 const globalErrorBoundary = read("../src/app/global-error.tsx");
+const componentErrorBoundary = read("../src/components/error-boundary.tsx");
 const workspaceLayout = read("../src/app/workspace/layout.tsx");
 const photoCapture = read("../src/components/workflows/DailyCarePhotoCapture.tsx");
 const quickCheckIn = read("../src/components/workflows/QuickDailyCheckIn.tsx");
@@ -1386,6 +1387,11 @@ const apiUrlSource = read("../src/lib/api-url.ts");
 assert.match(apiUrlSource, /SolenOS couldn't read the response/);
 assert.doesNotMatch(apiUrlSource, /response\.statusText|text\.slice\(0,\s*200\)/,
   "invalid upstream responses must not be copied into caregiver-facing errors");
+
+assert.match(componentErrorBoundary, /caregiverSafeGeneratedText\(this\.props\.name\)/,
+  "dynamic error-boundary section names must pass through the caregiver-language boundary");
+assert.doesNotMatch(componentErrorBoundary, /encountered an error|\bRetry\b/,
+  "component failures must use plain caregiver-facing recovery language");
 
 const shareTargetRoute = read("../src/app/share-target/route.ts");
 assert.doesNotMatch(shareTargetRoute, /error: data\.detail/,
