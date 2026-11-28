@@ -703,6 +703,10 @@ export async function signInToAccount(email: string, password: string): Promise<
     body: JSON.stringify({ email, password }),
   });
   const result = await handleResponse(res) as AccountLoginResponse;
+  // A successful account sign-in replaces the revoked local capability with
+  // the newly issued account session. Clear the device-deletion tombstone only
+  // after the server has confirmed the new bearer.
+  window.localStorage.removeItem(ANONYMOUS_SESSION_REVOKED_KEY);
   window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, result.access_token);
   window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, result.expires_at);
   setCareIdentity(result.person_id, result.caregiver_id);
