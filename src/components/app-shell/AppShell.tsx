@@ -329,12 +329,13 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
             // The local deletion boundary remains in place if sessionStorage is unavailable.
           }
         } catch (cause) {
-          const detail = cause instanceof Error ? cause.message : "The local offline queue could not be cleared.";
+          // Keep implementation diagnostics out of the caregiver alert.
+          console.error("SolenOS device cleanup failed", cause);
           window.alert(!offlineQueueCleared
-            ? `We couldn't remove unsent updates from this device, so no other local information was cleared. Close other SolenOS tabs and try again. ${detail}`
+            ? "We couldn't remove unsent updates from this device, so no other local information was cleared. Close other SolenOS tabs and try again."
             : accessRevoked
-              ? `Your SolenOS access was revoked, but some other device information could not be cleared. ${detail}`
-              : `Unsent updates were removed, but we couldn't confirm your access to SolenOS. Your other local information was not cleared. Check your connection and try again. ${detail}`);
+              ? "Your SolenOS access was revoked, but some other device information could not be cleared. Try again after closing other SolenOS tabs."
+              : "Unsent updates were removed, but we couldn't confirm your access to SolenOS. Your other local information was not cleared. Check your connection and try again.");
           return;
         }
         window.location.assign("/start");
