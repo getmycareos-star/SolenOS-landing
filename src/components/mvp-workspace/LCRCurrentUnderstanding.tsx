@@ -2805,7 +2805,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                 <nav aria-label="Ways to start your Care Record" className="lcr-empty-actions">
                   <Link className="lcr-text-action" href="/workspace/daily-care">Add a care update</Link>
                   <Link className="lcr-text-action" href="/workspace/documents">Upload a document</Link>
-                  <Link className="lcr-text-action" href="/workspace/companion">Ask SolenOS a question</Link>
+                  <Link className="lcr-text-action" href="/workspace/companion">Ask the Care Assistant a question</Link>
                 </nav>
                 <p>Information may be incomplete or uncertain. SolenOS can help organise what you share, but AI suggestions are not confirmed medical facts.</p>
               </div>
