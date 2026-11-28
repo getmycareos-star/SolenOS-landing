@@ -282,7 +282,7 @@ function parseDescription(description?: string | null): string {
   } catch {
     // Preserve plain-text descriptions as entered.
   }
-  return caregiverSafeAssistantText(description) || "Saved care information";
+  return caregiverSourceText(description) || "Saved care information";
 }
 
 function eventTimeWasNotProvided(event: CareEvent): boolean {
