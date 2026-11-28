@@ -366,23 +366,23 @@ assert.match(caregiverUiLanguageScanner, /ts\.isCallExpression\(node\) \|\| ts\.
   "the language scanner must inspect literal caregiver copy passed through helper calls");
 assert.match(caregiverUiLanguageScanner, /const roots = \["src\/app", "src\/components"\]/,
   "the language scanner must cover all application routes and UI components");
-assert.doesNotMatch(dailyCare, /epistemic_status\\.replace|item\\.status\\.replace/);
-assert.doesNotMatch(dailyCare, /item\\.event_type \\|\\| item\\.source_type/);
-assert.match(dailyCare, /<NaturalLanguageDailyUpdate \\/>/,
+assert.doesNotMatch(dailyCare, /epistemic_status\.replace|item\.status\.replace/);
+assert.doesNotMatch(dailyCare, /item\.event_type \|\| item\.source_type/);
+assert.match(dailyCare, /<NaturalLanguageDailyUpdate \/>/,
   "Add an update must use the natural-language capture workflow");
-assert.match(dailyCare, /<DailyCareRecentDocuments \\/>/,
+assert.match(dailyCare, /<DailyCareRecentDocuments \/>/,
   "Add an update must surface recent document processing and review states");
-assert.match(dailyCareHistory, /originalText \\? \`Earlier entry: \\$\\{originalText\\}\`/,
+assert.match(dailyCareHistory, /originalText \? `Earlier entry: \$\{originalText\}`/,
   "care history must retain the original wording attached to a correction");
-assert.match(dailyCareHistory, /correctedText \\? \`Correction: \\$\\{correctedText\\}\`/,
+assert.match(dailyCareHistory, /correctedText \? `Correction: \$\{correctedText\}`/,
   "care history must retain the corrected wording attached to a correction");
-assert.match(dailyCareHistory, /return caregiverSourceText\\(description\\) \\|\\| "Saved care information"/,
+assert.match(dailyCareHistory, /return caregiverSourceText\(description\) \|\| "Saved care information"/,
   "plain-text caregiver reports must be rendered as source text, not filtered as assistant output");
-assert.match(dailyCareHistory, /caregiverSafeAssistantText\\(event\\.source_label\\)/,
+assert.match(dailyCareHistory, /caregiverSafeAssistantText\(event\.source_label\)/,
   "system-provided source labels must pass through the caregiver language boundary");
-assert.match(dailyCareHistory, /caregiverSafeAssistantText\\(event\\.capture_processing\\.message\\)/,
+assert.match(dailyCareHistory, /caregiverSafeAssistantText\(event\.capture_processing\.message\)/,
   "server-provided processing messages must pass through the caregiver language boundary");
-assert.doesNotMatch(dailyCareHistory, /caregiverSafeAssistantText\\(event\\.(original_text|corrected_text|reason)\\)/,
+assert.doesNotMatch(dailyCareHistory, /caregiverSafeAssistantText\(event\.(original_text|corrected_text|reason)\)/,
   "assistant-output filtering must not be applied to caregiver source text");
 assert.match(dailyCareRecentDocuments, /The original file is still saved/);
 assert.match(dailyCareRecentDocuments, /Nothing is added to your Care Record until you approve it/);
