@@ -90,16 +90,6 @@ export default function GlobalError({ error, reset }: ErrorBoundaryProps) {
                 Go to home page
               </button>
             </div>
-            {error.digest && (
-              <p style={{
-                fontSize: "12px",
-                color: "#a8a29e",
-                marginTop: "16px",
-                fontFamily: "monospace",
-              }}>
-                Reference: {error.digest}
-              </p>
-            )}
           </div>
         </div>
       </body>
