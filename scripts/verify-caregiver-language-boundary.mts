@@ -258,6 +258,7 @@ const humanValidation = read("../src/components/HumanValidationLoop.tsx");
 const careCapture = read("../src/components/CareCapture.tsx");
 const feedbackPrompt = read("../src/components/mvp-workspace/UnderstandingFeedbackPrompt.tsx");
 const appShell = read("../src/components/app-shell/AppShell.tsx");
+const globalErrorBoundary = read("../src/app/global-error.tsx");
 const workspaceLayout = read("../src/app/workspace/layout.tsx");
 const photoCapture = read("../src/components/workflows/DailyCarePhotoCapture.tsx");
 const quickCheckIn = read("../src/components/workflows/QuickDailyCheckIn.tsx");
@@ -1372,6 +1373,10 @@ assert.match(deleteDeviceBranch, /console\.error\("SolenOS device cleanup failed
   "device cleanup diagnostics must remain in engineering logs");
 assert.doesNotMatch(deleteDeviceBranch, /\$\{detail\}/,
   "device cleanup alerts must not expose raw browser or storage exceptions");
+
+assert.match(globalErrorBoundary, /SolenOS could not finish showing this page/);
+assert.doesNotMatch(globalErrorBoundary, /error\.digest|Reference:/,
+  "global error screens must not expose internal error digests or identifiers");
 
 const shareTargetRoute = read("../src/app/share-target/route.ts");
 assert.doesNotMatch(shareTargetRoute, /error: data\.detail/,
