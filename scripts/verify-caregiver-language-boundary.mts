@@ -1378,6 +1378,11 @@ assert.match(globalErrorBoundary, /SolenOS could not finish showing this page/);
 assert.doesNotMatch(globalErrorBoundary, /error\.digest|Reference:/,
   "global error screens must not expose internal error digests or identifiers");
 
+const apiUrlSource = read("../src/lib/api-url.ts");
+assert.match(apiUrlSource, /SolenOS couldn't read the response/);
+assert.doesNotMatch(apiUrlSource, /response\.statusText|text\.slice\(0,\s*200\)/,
+  "invalid upstream responses must not be copied into caregiver-facing errors");
+
 const shareTargetRoute = read("../src/app/share-target/route.ts");
 assert.doesNotMatch(shareTargetRoute, /error: data\.detail/,
   "raw upstream share errors must never be returned to the caregiver");
