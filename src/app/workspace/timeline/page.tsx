@@ -89,12 +89,17 @@ function mapHistoryRecord(value: unknown, personId: string): CareEvent | null {
   const originalText = typeof row.original_text === "string" ? row.original_text : undefined;
   const correctedText = typeof row.corrected_text === "string" ? row.corrected_text : undefined;
   const reason = typeof row.reason === "string" ? row.reason : undefined;
+  // Keep caregiver-authored correction text explicitly distinguishable from
+  // generated descriptions. The display parser must preserve these exact
+  // source strings rather than applying the generated-copy leakage filter.
   const description = sourceType === "correction"
-    ? [
-        originalText ? `Earlier entry: ${originalText}` : "",
-        correctedText ? `Correction: ${correctedText}` : "",
-        reason ? `Reason: ${reason}` : "",
-      ].filter(Boolean).join("\n")
+    ? JSON.stringify({
+        correction_history: {
+          original_text: originalText ?? null,
+          corrected_text: correctedText ?? null,
+          reason: reason ?? null,
+        },
+      })
     : typeof row.text === "string" ? row.text
       : typeof row.description === "string" ? row.description
         : typeof row.source_text === "string" ? row.source_text : "";
@@ -219,6 +224,20 @@ function parseDescription(description?: string | null): string {
     if (typeof parsed === "string") return caregiverSourceText(parsed) || "Saved care information";
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
       const root = parsed as Record<string, unknown>;
+      const correction = root.correction_history && typeof root.correction_history === "object" && !Array.isArray(root.correction_history)
+        ? root.correction_history as Record<string, unknown>
+        : null;
+      if (correction) {
+        const original = typeof correction.original_text === "string" ? caregiverSourceText(correction.original_text) : null;
+        const corrected = typeof correction.corrected_text === "string" ? caregiverSourceText(correction.corrected_text) : null;
+        const reason = typeof correction.reason === "string" ? caregiverSourceText(correction.reason) : null;
+        const lines = [
+          original ? `Earlier entry: ${original}` : "",
+          corrected ? `Correction: ${corrected}` : "",
+          reason ? `Reason: ${reason}` : "",
+        ].filter(Boolean);
+        return lines.join("\\n") || "Correction details are not available.";
+      }
       const capture = (root.original_capture && typeof root.original_capture === "object" && !Array.isArray(root.original_capture)
         ? root.original_capture
         : root) as Record<string, unknown>;
