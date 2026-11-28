@@ -1281,7 +1281,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
               other: "Something else",
               refused: "Refused",
               missed: "Missed",
-            } as Record<string, string>)[med.status] || med.status.replace(/_/g, " ")}
+            } as Record<string, string>)[med.status] || caregiverStatusLabel(med.status) || "Status not available"}
           </span>
         </div>
         
