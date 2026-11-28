@@ -431,6 +431,7 @@ try {
               : []),
             ...apiFailures.map((item) => ({ kind: "api_error", ...item })),
             ...pageErrors.map((error) => ({ kind: "page_error", error })),
+            ...consoleErrors.map((error) => ({ kind: "console_error", error })),
           ];
           const result = {
             target: target.label,
