@@ -64,6 +64,7 @@ const ANONYMOUS_PERSON_KEY = "solenos_backend_person_id";
 const ANONYMOUS_CAREGIVER_KEY = "solenos_backend_caregiver_id";
 const ANONYMOUS_EXPIRY_KEY = "solenos_anonymous_session_expires_at";
 const ANONYMOUS_SESSION_REVOKED_KEY = "solenos_anonymous_session_revoked";
+export const ACCOUNT_SIGNED_IN_NOTICE_STORAGE = "solenos_account_signed_in_notice";
 if (typeof window !== "undefined") {
   // Storage events fire once per changed key. Compare the combined scope so
   // a person-and-caregiver switch produces one notification, not two reloads.
@@ -692,6 +693,9 @@ export async function acceptCaregiverInvitation(input: {
   ) as CaregiverInvitationAcceptResponse;
   window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, result.access_token);
   window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, result.expires_at);
+  // Preserve a one-time success notice if the person-scope event remounts
+  // Settings before the submitting component can update its local state.
+  try { window.sessionStorage.setItem(ACCOUNT_SIGNED_IN_NOTICE_STORAGE, "1"); } catch {}
   setCareIdentity(result.person_id, result.caregiver_id);
   return result;
 }

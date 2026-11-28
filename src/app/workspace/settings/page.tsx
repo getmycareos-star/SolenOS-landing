@@ -18,7 +18,7 @@ import { useToast } from "@/components/ui/Toast";
 import { caregiverSafeErrorMessage, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
 import { useWorkspace } from "@/lib/workspace-context";
 import { SUPPORT_EMAIL } from "@/lib/early-access-trust";
-import { createAccount, deleteJSON, ensureAnonymousSession, getAnonymousAccessToken, getJSON, markAnonymousSessionRevokedLocally, patchJSON, postJSON, putJSON, revokeAnonymousSession, signInToAccount } from "@/api/client";
+import { ACCOUNT_SIGNED_IN_NOTICE_STORAGE, createAccount, deleteJSON, ensureAnonymousSession, getAnonymousAccessToken, getJSON, markAnonymousSessionRevokedLocally, patchJSON, postJSON, putJSON, revokeAnonymousSession, signInToAccount } from "@/api/client";
 import { PolicySettingsPanel } from "@/components/mvp-workspace/PolicySettingsPanel";
 import { HelpImproveSolenos } from "@/components/mvp-workspace/HelpImproveSolenos";
 import { IdentityDeviceRecoveryPanel } from "@/components/mvp-workspace/IdentityDeviceRecoveryPanel";
@@ -346,6 +346,9 @@ function AccountCard({ onSignedOut }: { onSignedOut: () => void }) {
       if (window.sessionStorage.getItem(ACCOUNT_SIGNED_OUT_NOTICE_STORAGE) === "1") {
         setSignedOut(true);
         setMessage(ACCOUNT_SIGNED_OUT_NOTICE);
+      } else if (window.sessionStorage.getItem(ACCOUNT_SIGNED_IN_NOTICE_STORAGE) === "1") {
+        window.sessionStorage.removeItem(ACCOUNT_SIGNED_IN_NOTICE_STORAGE);
+        setMessage("Signed in. Your existing Care Record is available.");
       }
     } catch {
       // The notice is best-effort UI continuity; sign-in and server revocation
@@ -397,7 +400,10 @@ function AccountCard({ onSignedOut }: { onSignedOut: () => void }) {
       } else if (mode === "login") {
         const result = await signInToAccount(email, password);
         setAccount(result.account);
-        try { window.sessionStorage.removeItem(ACCOUNT_SIGNED_OUT_NOTICE_STORAGE); } catch {}
+        try {
+          window.sessionStorage.removeItem(ACCOUNT_SIGNED_OUT_NOTICE_STORAGE);
+          window.sessionStorage.removeItem(ACCOUNT_SIGNED_IN_NOTICE_STORAGE);
+        } catch {}
         setSignedOut(false);
         setMessage("Signed in. Your existing Care Record is available.");
         setMode("idle");
