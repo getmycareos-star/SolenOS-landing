@@ -1600,11 +1600,15 @@ await record("01c workspace links, browser back, More menu and account form vali
   await accountSection.getByRole("button", { name: "I have saved the code", exact: true }).click();
 
   await accountSection.getByRole("button", { name: "Sign out", exact: true }).click();
-  await page.getByText("Signed out securely.", { exact: true }).waitFor({ timeout: 30_000 });
+  await page.waitForFunction(() =>
+    sessionStorage.getItem("solenos_account_signed_out_notice") === "1" &&
+    localStorage.getItem("solenos_anonymous_access_token") === null,
+    { timeout: 15_000 },
+  );
   await accountSection.evaluate((element) => {
     if (element instanceof HTMLDetailsElement && !element.open) element.open = true;
   });
-  await accountSection.getByText(/Your Care Record is still saved/).waitFor({ timeout: 10_000 });
+  await accountSection.getByText(/Signed out securely\. Your Care Record is still saved/).waitFor({ timeout: 10_000 });
   const signedOutState = await page.evaluate(() => ({
     notice: sessionStorage.getItem("solenos_account_signed_out_notice"),
     token: localStorage.getItem("solenos_anonymous_access_token"),
@@ -1620,11 +1624,15 @@ await record("01c workspace links, browser back, More menu and account form vali
   await accountSection.getByText("Signed in. Your existing Care Record is available.", { exact: true }).waitFor({ timeout: 20_000 });
 
   await accountSection.getByRole("button", { name: "Sign out", exact: true }).click();
-  await page.getByText("Signed out securely.", { exact: true }).waitFor({ timeout: 30_000 });
+  await page.waitForFunction(() =>
+    sessionStorage.getItem("solenos_account_signed_out_notice") === "1" &&
+    localStorage.getItem("solenos_anonymous_access_token") === null,
+    { timeout: 15_000 },
+  );
   await accountSection.evaluate((element) => {
     if (element instanceof HTMLDetailsElement && !element.open) element.open = true;
   });
-  await accountSection.getByText(/Your Care Record is still saved/).waitFor({ timeout: 10_000 });
+  await accountSection.getByText(/Signed out securely\. Your Care Record is still saved/).waitFor({ timeout: 10_000 });
   const signedOutStateAfterReauth = await page.evaluate(() => ({
     notice: sessionStorage.getItem("solenos_account_signed_out_notice"),
     token: localStorage.getItem("solenos_anonymous_access_token"),
