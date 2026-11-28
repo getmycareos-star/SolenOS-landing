@@ -668,7 +668,7 @@ assert.doesNotMatch(lcr, /Your Living Care Record|Progress:|Shared through:|Revi
   "the Care Record must not expose internal evidence, baseline or review terminology");
 assert.match(lcr, /Your Care Record/);
 assert.doesNotMatch(companion, /Source review:|No source review has been recorded|latest source reviews/i,
-  "Ask SolenOS explanations must refer to notes and documents, not source-review terminology");
+  "Care Assistant explanations must refer to notes and documents, not source-review terminology");
 assert.doesNotMatch(documentReview, /Extraction status|Contains negative wording|Tentative wording|Conditional wording|ORIGINAL WORDS IN THE DOCUMENT/i,
   "document review must use ordinary language");
 assert.doesNotMatch(sourceReview, /Evidence records could not be loaded|Saved evidence reviews could not be loaded/i,
@@ -691,7 +691,7 @@ const howItWorksPage = read("../src/app/how-it-works/page.tsx");
 const trustContent = read("../src/lib/trust-content/index.ts");
 const howItWorksCopy = trustContent.slice(trustContent.indexOf("export const HOW_IT_WORKS = {"), trustContent.indexOf("export const FIRST_USE ="));
 assert.match(howItWorksPage, /Care Record/);
-assert.match(howItWorksPage, /Ask SolenOS/);
+assert.match(howItWorksPage, /Care Assistant/);
 assert.doesNotMatch(howItWorksPage, /Living Care Record|AI Companion|source of truth|normal save and review flow/);
 assert.match(howItWorksCopy, /healthcare professional/);
 assert.match(howItWorksCopy, /what is not clear yet/);
@@ -721,7 +721,7 @@ assert.match(statusCareDelta, /Compare with saved care information/);
 assert.match(careRecordOverview, /See what has been saved, who shared it/);
 assert.match(persistedOrientation, /hasRequiredSourceGaps \|\| hasOptionalSourceGaps \|\| projection\.schema_status !== "complete" \|\| projection\.item_count > 0[\s\S]*?This does not mean your Care Record is empty[\s\S]*?Your Care Record does not have any care information yet/, "an incomplete or unavailable source view must not be presented as an empty Care Record");
 assert.match(workspaceNav, /href: "\/workspace"[\s\S]*?label: "Today"/, "the primary Today destination opens the current care picture");
-assert.match(workspaceNav, /label: "Ask SolenOS"/, "the existing Companion remains reachable through its caregiver-facing Ask SolenOS destination");
+assert.match(workspaceNav, /label: "Care Assistant"/, "the existing Companion remains reachable through its caregiver-facing Care Assistant destination");
 assert.doesNotMatch(workspaceNav, /label: "Living Care Record"|label: "AI Companion"/);
 assert.match(informationStatus, /Known/);
 assert.match(informationStatus, /Not sure yet/);
@@ -897,7 +897,7 @@ assert.match(earlyAccessLanguage, /Open your Care Record/,
   "early-access entry must use the caregiver-facing Care Record name");
 assert.doesNotMatch(publicShellLanguage, /Living Care Record/,
   "public navigation and footer must use the same Care Record name as the workspace");
-assert.doesNotMatch(landingPageLanguage, /Living Care Record|AI Companion/, "the public landing page must use Care Record and Ask SolenOS");
+assert.doesNotMatch(landingPageLanguage, /Living Care Record|AI Companion/, "the public landing page must use Care Record and Care Assistant");
 assert.match(landingPageLanguage, /A CARE RECORD FOR FAMILY CAREGIVERS/);
 assert.match(landingPageLanguage, /Start your Care Record/);
 
@@ -952,7 +952,7 @@ for (const [term, expected] of [
   ["retrieval", "Finding earlier care information"],
   ["open loops", "Things that still need attention"],
   ["longitudinal history", "Care history over time"],
-  ["AI Companion", "Ask SolenOS"],
+  ["AI Companion", "Care Assistant"],
   ["epistemic status", "What is known, what is unclear, or not recorded"],
   ["assessment_coverage", "What information was checked"],
   ["source attribution", "Who shared this information"],
