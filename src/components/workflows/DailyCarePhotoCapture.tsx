@@ -206,9 +206,7 @@ export default function DailyCarePhotoCapture() {
         if (summary) setPendingCount(summary.pending);
         setError("This photo is saved on this device. It has not reached SolenOS or been added to your care record yet. It will be sent when your connection returns. Keep this browser data until it is sent.");
       } else {
-        setError(cause instanceof Error
-          ? cause.message
-          : "SolenOS could not confirm the upload. Keep the photo selected and retry.");
+        setError("SolenOS couldn't confirm the upload. Keep the photo selected and try again.");
       }
     } finally {
       setUploadStage("idle");
