@@ -954,7 +954,7 @@ export default function AppointmentWorkspace() {
                 } catch (cause) {
                   setDocumentMessage(uploadedEvidenceId
                     ? 'The original document is saved in Documents, but its appointment link could not be saved. Retry linking it below; do not upload it again.'
-                    : cause instanceof Error ? cause.message : 'The document could not be saved. Try again when the connection is available.')
+                    : 'The document could not be saved. Try again when the connection is available.')
                 } finally {
                   setDocumentBusy(false)
                 }
