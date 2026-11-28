@@ -66,7 +66,9 @@ function formatDateTime(value: string): string {
 }
 
 function reminderLabel(reminder: CareReminder): string {
-  if (reminder.status !== "open") return reminder.status === "completed" ? "Completed" : "Cancelled";
+  if (reminder.status === "completed") return "Completed";
+  if (reminder.status === "cancelled") return "Cancelled";
+  if (reminder.status !== "open") return "Status not available";
   return new Date(reminder.due_at).getTime() < Date.now() ? "Overdue" : "Upcoming";
 }
 
