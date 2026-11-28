@@ -33,7 +33,7 @@ assert.match(shell, /function CareContextBar[\s\S]*?recordLoadError[\s\S]*?No ca
   "care context distinguishes unavailable data from an empty record and provides a useful next step");
 assert.match(workspaceLayout, /<WorkspaceProvider>[\s\S]*?<WorkspaceShellContent>\{children\}<\/WorkspaceShellContent>[\s\S]*?<\/WorkspaceProvider>/,
   "the workspace shell remains mounted inside the provider that owns session and care-scope state");
-assert.match(shell, /<AppShell>[\s\S]*?\{children\}[\s\S]*?<\/AppShell>/,
+assert.match(shell, /<AppShell\b[\s\S]*?\{children\}[\s\S]*?<\/AppShell>/,
   "the application shell presents workspace navigation without an additional onboarding wall");
 assert.match(shell, /<GlobalDisplayPreferences\s*\/>/,
   "global display preferences remain mounted in the workspace");
