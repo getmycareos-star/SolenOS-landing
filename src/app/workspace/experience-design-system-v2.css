@@ -3473,6 +3473,11 @@ html.solenos-first-visit-mode .solenos-chat-app .solenos-chat-main {
 
 /* Dark-mode contrast repairs from rendered 8-viewport workspace audit.
    Keep the intentionally pale action/navigation surfaces paired with dark ink. */
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-notification-shortcut.is-active,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-notification-shortcut.is-active > svg {
+  color: #263f32 !important;
+  -webkit-text-fill-color: #263f32 !important;
+}
 :root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-nav-subitem.is-active,
 :root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-nav-subitem.is-active > span,
 :root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-nav-subitem.is-active .solenos-chat-nav-subicon,
