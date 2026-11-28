@@ -159,7 +159,7 @@ export function PolicySettingsPanel(_props: Props = {}) {
     <section className="policy-settings-panel" aria-labelledby="improvement-consent-heading">
       <h4 id="improvement-consent-heading">Help improve SolenOS (optional)</h4>
       <p className="panel-muted">
-        This optional choice controls whether feedback you choose to send can be used to improve SolenOS. It does not automatically send your care notes, documents, or Ask SolenOS conversations. Your Care Record and the work needed to provide the features you ask for are separate from this choice. Your choice stays saved until you change it.
+        This optional choice controls whether feedback you choose to send can be used to improve SolenOS. It does not automatically send your care notes, documents, or Care Assistant conversations. Your Care Record and the work needed to provide the features you ask for are separate from this choice. Your choice stays saved until you change it.
       </p>
 
       {loadError && (
