@@ -17,6 +17,7 @@ const navigation = read("src/lib/workspace-navigation.ts");
 const shell = read("src/components/app-shell/AppShell.tsx");
 const workspaceLayout = read("src/app/workspace/layout.tsx");
 const workspaceShell = read("src/components/app-shell/WorkspaceShellContent.tsx");
+const workspaceLayout = read("src/app/workspace/layout.tsx");
 assert.ok(workspaceShell.includes('getJSON("/care-profile")') && workspaceShell.includes("Care for {recipientName}"), "the persistent workspace context must identify the active care recipient from the authorized server profile");
 assert.ok(workspaceShell.includes('addEventListener("personIdChanged", refreshForPersonChange)'), "the visible recipient identity must refresh and clear when the active care record changes");
 const workspaceContext = read("src/lib/workspace-context.tsx");
@@ -142,7 +143,7 @@ for (const route of ["/workspace/timeline", "/workspace/documents", "/workspace/
 }
 assert.ok(shell.includes("CARE_INFORMATION_NAVIGATION.some"), "the Care information parent remains active on its child routes");
 assert.ok(workspaceLayout.includes("<WorkspaceProvider>") && workspaceLayout.includes("<WorkspaceShellContent>"), "every workspace route shares the authenticated workspace provider and shell");
-assert.ok(shell.includes("<WorkspaceEntryGate>") && shell.includes("entryReady"), "AppShell gates direct workspace entry until session bootstrap resolves");
+assert.ok(workspaceLayout.includes("<WorkspaceProvider>") && workspaceLayout.includes("<WorkspaceShellContent>{children}</WorkspaceShellContent>"), "the workspace layout mounts the application shell inside the shared session and care-scope provider without adding an onboarding wall");
 assert.ok(workspaceContext.includes("ensureAnonymousSession()") && workspaceContext.includes('getJSON('), "workspace bootstrap uses the server-issued caregiver session and authorized record read");
 assert.ok(workspaceContext.includes('addEventListener("personIdChanged", refreshForPersonChange)'), "the shared workspace projection refreshes when the active caregiver or care recipient changes");
 assert.ok(workspaceContext.includes("scopeRefreshVersionRef") && workspaceContext.includes("setRuntime({ ...createEmptyUiRuntimeState()"), "a scope change clears prior-person content and rejects stale refresh responses");
