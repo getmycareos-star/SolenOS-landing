@@ -59,7 +59,7 @@ for (const file of caregiverCopySources) {
 }
 files.push(...sharedLanguageHelpers);
 
-const forbidden = /\b(?:epistemic(?: status)?|provenance|reconciliation(?: review)?|assertions?|living care record|ai companion|companion|ask solenos|ai doctor|care continuity|longitudinal(?: history)?|assessment coverage|source attribution|handoff history|schema|database|backend|frontend|endpoint|payload|telemetry|inference(?: pipeline)?|retrieval(?: result| pipeline)?|extraction(?: pipeline)?|lineage|pipeline|migration|idempotent|persistence layer|postgres(?:ql)?|sqlite|qwen|lcr|delta engine|open loops|diagnostic (?:payload|schema|pipeline|trace|log|output)|metadata|audit trail|api|json|ocr|checksum|fingerprint|uuid|http|claim (?:assessment|provenance|candidate|id)|evidence (?:review|assessment|completeness|freshness|retrieval|payload|id|projection|lineage|pipeline|chain)|confidence (?:score|level|threshold)|(?:low|high|moderate|medium) confidence|candidate projection|longitudinal|corroborat(?:e|ion|ed|ing)|triangulat(?:e|ion)|baseline comparison|technical (?:details|diagnostic|diagnostics|error)|data integrity|stored workflow status|truth judgment|independent truth|observation window|source id|ai interpretation|ai-generated|ai-assisted|anonymous session|care session|session token)\b/i;
+const forbidden = /\b(?:epistemic(?: status)?|provenance|reconciliation(?: review)?|assertions?|living care record|ai companion|solenos companion|ask solenos|companion (?:chat|conversation|feature|page)|ai doctor|care continuity|longitudinal(?: history)?|assessment coverage|source attribution|handoff history|schema|database|backend|frontend|endpoint|payload|telemetry|inference(?: pipeline)?|retrieval(?: result| pipeline)?|extraction(?: pipeline)?|lineage|pipeline|migration|idempotent|persistence layer|postgres(?:ql)?|sqlite|qwen|lcr|delta engine|open loops|diagnostic (?:payload|schema|pipeline|trace|log|output)|metadata|audit trail|api|json|ocr|checksum|fingerprint|uuid|http|claim (?:assessment|provenance|candidate|id)|evidence (?:review|assessment|completeness|freshness|retrieval|payload|id|projection|lineage|pipeline|chain)|confidence (?:score|level|threshold)|(?:low|high|moderate|medium) confidence|candidate projection|longitudinal|corroborat(?:e|ion|ed|ing)|triangulat(?:e|ion)|baseline comparison|technical (?:details|diagnostic|diagnostics|error)|data integrity|stored workflow status|truth judgment|independent truth|observation window|source id|ai interpretation|ai-generated|ai-assisted|anonymous session|care session|session token)\b/i;
 
 const vocabularyExamples: Array<{ text: string; shouldFlag: boolean }> = [
   { text: "Your care assessment is scheduled for Tuesday.", shouldFlag: false },
@@ -68,7 +68,7 @@ const vocabularyExamples: Array<{ text: string; shouldFlag: boolean }> = [
   { text: "The evidence retrieval pipeline is incomplete.", shouldFlag: true },
   { text: "The confidence score is low.", shouldFlag: true },
   { text: "The backend payload is incomplete.", shouldFlag: true },
-  { text: "The Companion can help with care questions.", shouldFlag: true },
+  { text: "The AI Companion can help with care questions.", shouldFlag: true },
   { text: "Ask SolenOS about the care record.", shouldFlag: true },
   { text: "The Care Assistant can help with care questions.", shouldFlag: false },
   { text: "This is the stored workflow status, not an independent truth judgment.", shouldFlag: true },
