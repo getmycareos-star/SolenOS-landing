@@ -88,8 +88,8 @@ requireText("src/app/workspace/page.tsx", [
   "View care information",
   "See what is happening today, what has changed and what may need your attention. Your saved care information stays connected as things change.",
 ]);
-assert(workspaceNavigation.includes('id: "ask-solenos"') && workspaceNavigation.includes('href: "/workspace/companion"') && workspaceNavigation.includes('label: "Ask SolenOS"'),
-  "The existing Companion is directly reachable as Ask SolenOS from primary navigation.");
+assert(workspaceNavigation.includes('id: "ask-solenos"') && workspaceNavigation.includes('href: "/workspace/companion"') && workspaceNavigation.includes('label: "Care Assistant"'),
+  "The existing Companion is directly reachable as Care Assistant from primary navigation.");
 assert(!read("src/app/workspace/page.tsx").includes("QwenAssistPanel"),
   "The caregiver home must route questions through the conversational Companion, not a separate care-management assistant panel.");
 requireText("src/components/mvp-workspace/CognitiveWorkspace.tsx", [
