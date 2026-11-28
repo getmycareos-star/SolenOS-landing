@@ -475,7 +475,8 @@ assert.doesNotMatch(companion, /SolenOS Companion|AI Companion|Grounded, not gue
 assert.doesNotMatch(documentReview, /Background processing|processing problem|processing in the background|SolenOS is processing|SolenOS is retrying/);
 assert.match(documentReview, /SolenOS is reading the document in the background/);
 assert.doesNotMatch(dailyCare, /Document processing status could not be read|document library before assuming processing is complete/);
-assert.match(dailyCare, /Open Documents to see the latest update/);
+assert.match(dailyCare, /<DailyCareRecentDocuments \/>/, "Daily Care must include its recent-document status panel");
+assert.match(dailyCareRecentDocuments, /href="\/workspace\/documents">Open Documents/, "the recent-document panel must link to the full Documents workspace");
 assert.doesNotMatch(appointment, /Information status not available|Review status not available|related note\(s\)|saved items/);
 assert.match(appointment, /Notes and documents:/);
 assert.doesNotMatch(settings, /anonymous session|one-time recovery code|Clear local data/);
