@@ -1599,22 +1599,20 @@ await record("01c workspace links, browser back, More menu and account form vali
   assert.ok(initialRecoveryCode.length >= 32, "account creation must issue a one-time recovery code");
   await accountSection.getByRole("button", { name: "I have saved the code", exact: true }).click();
 
+  const tokenBeforeSignout = await page.evaluate(() => localStorage.getItem("solenos_anonymous_access_token"));
+  assert.ok(tokenBeforeSignout, "the active account must have a server-issued bearer token before sign-out");
   await accountSection.getByRole("button", { name: "Sign out", exact: true }).click();
-  await page.waitForFunction(() =>
-    sessionStorage.getItem("solenos_account_signed_out_notice") === "1" &&
-    localStorage.getItem("solenos_anonymous_access_token") === null,
-    { timeout: 15_000 },
-  );
+  await page.waitForFunction(() => sessionStorage.getItem("solenos_account_signed_out_notice") === "1", { timeout: 15_000 });
   await accountSection.evaluate((element) => {
     if (element instanceof HTMLDetailsElement && !element.open) element.open = true;
   });
   await accountSection.getByText(/Signed out securely\. Your Care Record is still saved/).waitFor({ timeout: 10_000 });
-  const signedOutState = await page.evaluate(() => ({
-    notice: sessionStorage.getItem("solenos_account_signed_out_notice"),
-    token: localStorage.getItem("solenos_anonymous_access_token"),
-  }));
-  assert.equal(signedOutState.notice, "1", "the sign-out confirmation must survive the workspace scope refresh");
-  assert.equal(signedOutState.token, null, "the revoked bearer token must be removed from this browser");
+  const tokenAfterSignout = await page.evaluate(() => localStorage.getItem("solenos_anonymous_access_token"));
+  assert.notEqual(tokenAfterSignout, tokenBeforeSignout, "the signed-out bearer token must be cleared or replaced, never retained");
+  const revokedTokenResponse = await fetch(new URL("/api/v1/care-profile", backend), {
+    headers: { authorization: `Bearer ${tokenBeforeSignout}` },
+  });
+  assert.ok([401, 403].includes(revokedTokenResponse.status), "the previously issued bearer token must no longer access the care profile");
   await accountSection.getByRole("button", { name: "Sign in to an existing account", exact: true }).click();
   const authEmail = accountSection.locator("#account-email");
   const authForm = authEmail.locator("xpath=ancestor::form");
@@ -1623,22 +1621,21 @@ await record("01c workspace links, browser back, More menu and account form vali
   await authForm.getByRole("button", { name: "Sign in", exact: true }).click();
   await accountSection.getByText("Signed in. Your existing Care Record is available.", { exact: true }).waitFor({ timeout: 20_000 });
 
+  const tokenBeforeSecondSignout = await page.evaluate(() => localStorage.getItem("solenos_anonymous_access_token"));
+  assert.ok(tokenBeforeSecondSignout, "the reauthenticated account must have a server-issued bearer token before sign-out");
+  await page.evaluate(() => sessionStorage.removeItem("solenos_account_signed_out_notice"));
   await accountSection.getByRole("button", { name: "Sign out", exact: true }).click();
-  await page.waitForFunction(() =>
-    sessionStorage.getItem("solenos_account_signed_out_notice") === "1" &&
-    localStorage.getItem("solenos_anonymous_access_token") === null,
-    { timeout: 15_000 },
-  );
+  await page.waitForFunction(() => sessionStorage.getItem("solenos_account_signed_out_notice") === "1", { timeout: 15_000 });
   await accountSection.evaluate((element) => {
     if (element instanceof HTMLDetailsElement && !element.open) element.open = true;
   });
   await accountSection.getByText(/Signed out securely\. Your Care Record is still saved/).waitFor({ timeout: 10_000 });
-  const signedOutStateAfterReauth = await page.evaluate(() => ({
-    notice: sessionStorage.getItem("solenos_account_signed_out_notice"),
-    token: localStorage.getItem("solenos_anonymous_access_token"),
-  }));
-  assert.equal(signedOutStateAfterReauth.notice, "1", "the sign-out confirmation must survive the workspace scope refresh");
-  assert.equal(signedOutStateAfterReauth.token, null, "the revoked bearer token must be removed from this browser");
+  const tokenAfterSecondSignout = await page.evaluate(() => localStorage.getItem("solenos_anonymous_access_token"));
+  assert.notEqual(tokenAfterSecondSignout, tokenBeforeSecondSignout, "the reauthenticated bearer token must be cleared or replaced after sign-out");
+  const revokedReauthenticatedTokenResponse = await fetch(new URL("/api/v1/care-profile", backend), {
+    headers: { authorization: `Bearer ${tokenBeforeSecondSignout}` },
+  });
+  assert.ok([401, 403].includes(revokedReauthenticatedTokenResponse.status), "the reauthenticated bearer token must no longer access the care profile");
   const securitySection = page.locator("#settings-security");
   await securitySection.locator("summary").click();
   await page.locator("#identity-recovery-email").fill(accountEmail);
