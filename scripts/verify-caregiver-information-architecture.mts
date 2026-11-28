@@ -142,7 +142,7 @@ for (const route of ["/workspace/timeline", "/workspace/documents", "/workspace/
 }
 assert.ok(shell.includes("CARE_INFORMATION_NAVIGATION.some"), "the Care information parent remains active on its child routes");
 assert.ok(workspaceLayout.includes("<WorkspaceProvider>") && workspaceLayout.includes("<WorkspaceShellContent>"), "every workspace route shares the authenticated workspace provider and shell");
-assert.ok(workspaceShell.includes("<WorkspaceEntryGate>") && workspaceShell.includes("entryReady"), "direct workspace entry waits for session bootstrap");
+assert.ok(shell.includes("<WorkspaceEntryGate>") && shell.includes("entryReady"), "AppShell gates direct workspace entry until session bootstrap resolves");
 assert.ok(workspaceContext.includes("ensureAnonymousSession()") && workspaceContext.includes('getJSON('), "workspace bootstrap uses the server-issued caregiver session and authorized record read");
 assert.ok(workspaceContext.includes('addEventListener("personIdChanged", refreshForPersonChange)'), "the shared workspace projection refreshes when the active caregiver or care recipient changes");
 assert.ok(workspaceContext.includes("scopeRefreshVersionRef") && workspaceContext.includes("setRuntime({ ...createEmptyUiRuntimeState()"), "a scope change clears prior-person content and rejects stale refresh responses");
