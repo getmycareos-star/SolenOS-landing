@@ -20,9 +20,6 @@ const routes = [
   "/workspace/more",
   "/workspace/documents",
   "/workspace/notifications",
-  "/workspace/continuity",
-  "/workspace/record",
-  "/workspace/community",
 ];
 const viewports = [
   { label: "small-mobile-320x568", width: 320, height: 568 },
