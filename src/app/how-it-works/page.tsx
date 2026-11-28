@@ -26,7 +26,7 @@ const CARE_EXPERIENCE = [
       "Use it when something happens today, when you need to add or correct a care note, or when you want to capture an update for later review.",
   },
   {
-    title: "Ask SolenOS",
+    title: "Care Assistant",
     subtitle: "Get help working through care situations",
     body:
       "Ask SolenOS helps caregivers think through a situation, understand saved information, prepare questions and get ready for appointments or care handoffs. It explains when something is not clear.",
@@ -87,7 +87,7 @@ export default function HowItWorksPage() {
           Imagine you notice that a family member has been sleeping poorly.
           Record what you observed in Daily Care. After you review the update,
           it can be saved to your Care Record with what was reported and when.
-          Then use Ask SolenOS if you want help preparing questions for
+          Then ask the Care Assistant to help prepare questions for
           the next care professional. Its suggestions do not become care facts
           unless they are reviewed and saved.
         </p>
