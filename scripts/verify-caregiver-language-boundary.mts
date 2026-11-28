@@ -47,6 +47,11 @@ assert.equal(caregiverSafeGeneratedText("The evidence supports this conclusion."
 assert.equal(caregiverSafeGeneratedText("The doctor ordered a diagnostic test."), "The doctor ordered a diagnostic test.");
 assert.equal(caregiverSafeAssistantText("A tooth extraction is planned next week."), "A tooth extraction is planned next week.");
 assert.equal(caregiverSafeGeneratedText("The diagnostic pipeline failed."), null);
+assert.equal(caregiverSafeGeneratedText("The confidence scores are 0.82."), null);
+assert.equal(caregiverSafeGeneratedText("The system prompt exposed hidden reasoning."), null);
+assert.equal(caregiverSafeGeneratedText("The hashes and metadata are attached."), null);
+assert.equal(caregiverSafeGeneratedText("The internal processing is complete."), null);
+
 assert.equal(caregiverSafeGeneratedText("This is the stored workflow status, not an independent truth judgment."), null);
 assert.equal(caregiverSafeGeneratedText("A few details may need checking."), "A few details may need checking.");
 assert.equal(caregiverSafeAssistantText("I am not confident about this detail."), "I am not confident about this detail.");
