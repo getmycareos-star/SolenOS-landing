@@ -120,7 +120,7 @@ const workspaceContext = fs.readFileSync(path.join(root, "src/lib/workspace-cont
 const companion = fs.readFileSync(path.join(root, "src/components/workflows/AICompanion.tsx"), "utf8");
 const workspaceHome = fs.readFileSync(path.join(root, "src/app/workspace/page.tsx"), "utf8");
 
-assert.match(workspaceShellContent, /function WorkspaceEntryGate[\s\S]*?entryReady[\s\S]*?Preparing your care workspace/);
+assert.match(appShell, /function WorkspaceEntryGate[\s\S]*?entryReady[\s\S]*?Preparing your care workspace/);
 assert.ok(workspaceHome.includes("<h1>Today</h1>"), "the canonical workspace entry page is titled Today");
 assert.ok(workspaceHome.includes('<LCRCurrentUnderstanding showNextStep viewMode="today" />'), "Today uses the concise authoritative LCR projection and contextual next step");
 assert.match(workspaceHome, /View care information/, "Today links to the canonical Care information destination");
