@@ -1393,6 +1393,15 @@ assert.match(componentErrorBoundary, /caregiverSafeGeneratedText\(this\.props\.n
 assert.doesNotMatch(componentErrorBoundary, /encountered an error|\bRetry\b/,
   "component failures must use plain caregiver-facing recovery language");
 
+assert.match(structuredDailyCapture, /caregiverStatusLabel\(med\.status\)/,
+  "unknown medication statuses must use the shared caregiver label boundary");
+assert.doesNotMatch(structuredDailyCapture, /med\.status\.replace\(/,
+  "unknown medication status codes must never be displayed as raw labels");
+const offlineQueueSource = read("../src/lib/offline-sync/durable-write-queue.ts");
+assert.match(offlineQueueSource, /This update needs to be checked before it can be sent/);
+assert.doesNotMatch(offlineQueueSource, /HTTP \$\{status\}/,
+  "offline sync messages must not expose raw HTTP status codes");
+
 const shareTargetRoute = read("../src/app/share-target/route.ts");
 assert.doesNotMatch(shareTargetRoute, /error: data\.detail/,
   "raw upstream share errors must never be returned to the caregiver");
