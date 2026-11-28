@@ -278,7 +278,7 @@ try {
     await route.fulfill({ response });
   });
   await companionPage.goto(new URL("/workspace/companion", frontend).toString(), { waitUntil: "domcontentloaded" });
-  await companionPage.getByRole("heading", { name: "Ask SolenOS", exact: true }).waitFor();
+  await companionPage.getByRole("heading", { name: "Care Assistant", exact: true }).waitFor();
   const composer = companionPage.getByLabel("Your message");
   await companionPage.waitForFunction(() => {
     const input = document.querySelector("#companion-message-input");
