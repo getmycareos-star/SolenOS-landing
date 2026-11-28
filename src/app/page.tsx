@@ -36,7 +36,7 @@ const careSteps = [
   {
     number: "05",
     title: "Ask about the record",
-    body: "Ask SolenOS about information saved in your Care Record. It should be clear when the record has no answer.",
+    body: "Ask the Care Assistant about information saved in your Care Record. It should be clear when the record has no answer.",
   },
   {
     number: "06",
