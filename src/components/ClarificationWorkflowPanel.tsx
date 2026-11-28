@@ -67,10 +67,10 @@ function questionStatusLabel(status: string, hasLinkedClaim = true, answererRole
       if (answererRole === "professional") return "Waiting for care-team confirmation";
       if (answererRole === "other_caregiver") return "Waiting for another caregiver";
       if (answererRole === "person_receiving_care") return "Waiting for the person's response";
-      if (!answererRole || answererRole === "not_known") return "Waiting to identify who can answer";
+      if (!answererRole || answererRole === "not_known") return "Waiting to find out who can answer";
       if (answererRole === "caregiver" || answererRole === "reporting_caregiver") return "Waiting for your observation";
       return "Waiting for an answer";
-    case "answered": return hasLinkedClaim ? "Answered — review needed" : "Answer saved";
+    case "answered": return hasLinkedClaim ? "Answered — needs review" : "Answer saved";
     case "declined": return "No answer provided";
     case "closed": return "Closed";
     case "unresolved": return "Still unclear";
