@@ -237,6 +237,9 @@ assert.match(dailyCareIntelligence, /caregiverSafeGeneratedText\(response\.messa
 assert.doesNotMatch(dailyCareIntelligence, /\bLCR\b/,
   "caregiver-facing Daily Care copy must say Care Record, not the internal abbreviation");
 assert.match(dailyCareIntelligence, /Approve and add to Care Record/);
+assert.doesNotMatch(dailyCareIntelligence, /DAILY CARE INTELLIGENCE|confirmed care facts/,
+  "Daily Care suggestions must not use internal intelligence terminology or imply confirmation");
+
 
 const handoff = read("../src/components/workflows/CareHandoffSharing.tsx");
 const claimReview = read("../src/components/ClaimAssessmentPanel.tsx");
