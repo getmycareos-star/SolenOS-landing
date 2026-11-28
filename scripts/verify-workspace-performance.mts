@@ -45,7 +45,7 @@ assert.match(shell, /prefetch=\{false\}/, "secondary routes must not prefetch on
 assert.match(shell, /onMouseEnter=\{\(\) => router\.prefetch\(href\)\}/, "navigation may prefetch only after explicit pointer intent");
 assert.match(shell, /const ShareCareSummaryPanel = dynamic\(/, "share/export UI must be deferred until opened");
 assert.match(shell, /solenos\.workspace\.navigation-to-route-mounted/, "navigation-to-route readiness must be measurable");
-assert.match(page, /<LCRCurrentUnderstanding \/>/, "the canonical workspace route must continue to render the LCR");
+assert.match(page, /<LCRCurrentUnderstanding showNextStep viewMode="today" \/>/, "the canonical Home route must render the current-day Care Record view");
 assert.match(landingStartLink, /solenos\.journey\.landing-cta/, "landing CTA timing must be recorded from a client component");
 assert.doesNotMatch(workspace, /sample|demo|placeholder|fake care/i, "performance changes must not introduce fabricated care data");
 
