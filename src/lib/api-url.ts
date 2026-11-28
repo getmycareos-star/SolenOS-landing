@@ -29,15 +29,11 @@ export function apiUrl(path: string): string {
 export async function safeJson(response: Response): Promise<unknown> {
   const text = await response.text();
   if (!text) {
-    throw new Error(
-      `Empty response from server (status ${response.status} ${response.statusText})`,
-    );
+    throw new Error("SolenOS couldn't read the response. Please try again.");
   }
   try {
     return JSON.parse(text);
   } catch {
-    throw new Error(
-      `Invalid JSON response from server (status ${response.status}): ${text.slice(0, 200)}`,
-    );
+    throw new Error("SolenOS couldn't read that information. Please try again.");
   }
 }
