@@ -255,6 +255,7 @@ assert.match(detailedAppointment, /caregiverSourceText\(item\.description\)/,
 assert.match(detailedAppointment, /caregiverSourceText\(item\.extracted_text\.slice\(0, 500\)\)/, "appointment document text must remain verbatim");
 const dailyCapture = read("../src/components/workflows/StructuredDailyCapture.tsx");
 const policySettings = read("../src/components/mvp-workspace/PolicySettingsPanel.tsx");
+const howItWorksPage = read("../src/app/how-it-works/page.tsx");
 const identityRecovery = read("../src/components/mvp-workspace/IdentityDeviceRecoveryPanel.tsx");
 const caregiverAccess = read("../src/components/mvp-workspace/CaregiverAccessPanel.tsx");
 const dementiaProfile = read("../src/components/mvp-workspace/DementiaCareProfilePanel.tsx");
@@ -727,6 +728,9 @@ assert.match(currentUnderstanding, /Ask the Care Assistant a question/);
 assert.doesNotMatch(currentUnderstanding, /\bAsk SolenOS\b/,
   "the Care Record must use the caregiver-facing Care Assistant name");
 assert.match(policySettings, /Care Assistant conversations/);
+assert.match(howItWorksPage, /title: "Care Assistant"/);
+assert.doesNotMatch(howItWorksPage, /Ask SolenOS|AI Companion|\\bCompanion\\b/,
+  "public product explanations must use the caregiver-facing Care Assistant name");
 assert.doesNotMatch(policySettings, /Ask SolenOS conversations/,
   "privacy settings must use the same Care Assistant name as navigation");
 
