@@ -1404,6 +1404,13 @@ assert.doesNotMatch(structuredDailyCapture, /med\.status\.replace\(/,
   "unknown medication status codes must never be displayed as raw labels");
 const offlineQueueSource = read("../src/lib/offline-sync/durable-write-queue.ts");
 assert.match(offlineQueueSource, /This update needs to be checked before it can be sent/);
+assert.match(photoCapture, /SolenOS couldn't confirm the upload/);
+assert.doesNotMatch(photoCapture, /cause instanceof Error\s*\?\s*cause\.message/,
+  "photo upload failures must not display raw storage or provider exceptions");
+assert.match(appointmentWorkspace, /The document could not be saved\. Try again when the connection is available/);
+assert.doesNotMatch(appointmentWorkspace, /cause instanceof Error\s*\?\s*cause\.message/,
+  "appointment document failures must not display raw upload exceptions");
+
 assert.doesNotMatch(offlineQueueSource, /HTTP \$\{status\}/,
   "offline sync messages must not expose raw HTTP status codes");
 
