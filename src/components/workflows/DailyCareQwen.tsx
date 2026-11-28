@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { getPersonId, postJSON } from "@/api/client";
-import { caregiverSourceText, caregiverSafeAssistantText, caregiverSafeErrorMessage, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverSourceText, caregiverSafeErrorMessage, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type SourceRecord = {
   source_type: string;
@@ -121,7 +121,7 @@ export default function DailyCareQwen() {
         proposals[index] = response.proposal;
         return { ...current, proposals };
       });
-      setFeedback(caregiverSafeAssistantText(response.message) || "Your review choice was saved.");
+      setFeedback(caregiverSafeGeneratedText(response.message) || "Your review choice was saved.");
     } catch (cause) {
       setError(caregiverSafeErrorMessage());
     } finally {
@@ -213,7 +213,7 @@ export default function DailyCareQwen() {
           {result.proposals?.length ? (
             <div className="daily-care-qwen__proposals">
               <h3>Suggested care record updates</h3>
-              <p>Review each proposal against its original entries. Nothing below is saved to the LCR until you explicitly accept it.</p>
+              <p>Review each proposal against its original entries. Nothing below is added to your Care Record until you approve it.</p>
               {result.proposals.map((proposal, index) => {
                 const final = ["accepted_by_caregiver", "rejected_by_caregiver"].includes(proposal.review_status);
                 return (
@@ -238,7 +238,7 @@ export default function DailyCareQwen() {
                         <div className="daily-care-qwen__actions">
                           <button type="button" disabled={reviewing !== null} onClick={() => void review(index, "correct")}>Save correction</button>
                           <button type="button" disabled={reviewing !== null} onClick={() => void review(index, "accept")}>
-                            {reviewing === index ? "Saving…" : "Approve and add to LCR"}
+                            {reviewing === index ? "Saving…" : "Approve and add to Care Record"}
                           </button>
                           <button type="button" disabled={reviewing !== null} onClick={() => void review(index, "reject")}>Reject</button>
                         </div>
