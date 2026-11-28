@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 const read = (path: string) => readFileSync(path, "utf8");
 const layout = read("src/app/workspace/layout.tsx");
 const shell = read("src/components/app-shell/WorkspaceShellContent.tsx");
+const appShell = read("src/components/app-shell/AppShell.tsx");
 const recovery = read("src/components/app-shell/WorkspaceErrorFallback.tsx");
 const breadcrumbs = read("src/components/app-shell/WorkspaceRouteBreadcrumbs.tsx");
 const rootLayout = read("src/app/layout.tsx");
@@ -30,7 +31,7 @@ assert.match(recovery, /"use client"[\s\S]*?We cannot confirm whether your last 
 
 assert.match(shell, /function CareContextBar[\s\S]*?recordLoadError[\s\S]*?No care details yet[\s\S]*?Add an update/,
   "care context distinguishes unavailable data from an empty record and provides a useful next step");
-assert.match(shell, /WorkspaceEntryGate[\s\S]*?Preparing your care workspace/,
+assert.match(appShell, /function WorkspaceEntryGate[\s\S]*?entryReady[\s\S]*?Preparing your care workspace/,
   "workspace entry remains gated until bootstrap resolves");
 assert.match(shell, /<GlobalDisplayPreferences\s*\/>/,
   "global display preferences remain mounted in the workspace");
