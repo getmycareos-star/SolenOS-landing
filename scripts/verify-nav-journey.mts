@@ -15,6 +15,7 @@ const earlyAccess = fs.readFileSync(path.join(root, "src/app/early-access/page.t
 const shell = fs.readFileSync(path.join(root, "src/components/public/PublicShell.tsx"), "utf8");
 const layout = fs.readFileSync(path.join(root, "src/app/workspace/layout.tsx"), "utf8");
 const workspaceShellContent = fs.readFileSync(path.join(root, "src/components/app-shell/WorkspaceShellContent.tsx"), "utf8");
+const workspaceLayout = fs.readFileSync(path.join(root, "src/app/workspace/layout.tsx"), "utf8");
 
 assert.equal(PUBLIC_TRUST_LAYER.enterCareRecord, "/workspace?enter=1");
 assert.match(WELCOME_HOME.primaryCtaHref, /^\/workspace\?enter=1$/);
@@ -120,7 +121,7 @@ const workspaceContext = fs.readFileSync(path.join(root, "src/lib/workspace-cont
 const companion = fs.readFileSync(path.join(root, "src/components/workflows/AICompanion.tsx"), "utf8");
 const workspaceHome = fs.readFileSync(path.join(root, "src/app/workspace/page.tsx"), "utf8");
 
-assert.match(appShell, /function WorkspaceEntryGate[\s\S]*?entryReady[\s\S]*?Preparing your care workspace/);
+assert.match(workspaceLayout, /<WorkspaceProvider>[\s\S]*?<WorkspaceShellContent>\{children\}<\/WorkspaceShellContent>[\s\S]*?<\/WorkspaceProvider>/);
 assert.ok(workspaceHome.includes("<h1>Today</h1>"), "the canonical workspace entry page is titled Today");
 assert.ok(workspaceHome.includes('<LCRCurrentUnderstanding showNextStep viewMode="today" />'), "Today uses the concise authoritative LCR projection and contextual next step");
 assert.match(workspaceHome, /View care information/, "Today links to the canonical Care information destination");
