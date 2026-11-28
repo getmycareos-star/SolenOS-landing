@@ -729,7 +729,7 @@ assert.doesNotMatch(currentUnderstanding, /\bAsk SolenOS\b/,
   "the Care Record must use the caregiver-facing Care Assistant name");
 assert.match(policySettings, /Care Assistant conversations/);
 assert.match(howItWorksPage, /title: "Care Assistant"/);
-assert.doesNotMatch(howItWorksPage, /Ask SolenOS|AI Companion|\\bCompanion\\b/,
+assert.doesNotMatch(howItWorksPage, /Ask SolenOS|AI Companion|Companion/,
   "public product explanations must use the caregiver-facing Care Assistant name");
 assert.doesNotMatch(policySettings, /Ask SolenOS conversations/,
   "privacy settings must use the same Care Assistant name as navigation");
