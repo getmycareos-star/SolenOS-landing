@@ -653,10 +653,10 @@ function PrivacyCard() {
         window.alert("SolenOS is waiting for another tab to close before clearing device-only updates. Close other SolenOS tabs and keep this page open; clearing will continue automatically.");
       });
     } catch (cause) {
+      // Storage and browser exceptions are diagnostics, not caregiver copy.
+      console.error("SolenOS device cleanup failed", cause);
       show(
-        cause instanceof Error
-          ? cause.message
-          : "We couldn't remove unsent updates from this device. Close other SolenOS tabs and try again.",
+        "We couldn't remove unsent updates from this device. Close other SolenOS tabs and try again.",
         "error",
       );
       setClearingLocalData(false);
