@@ -31,7 +31,7 @@ const STARTING_POINTS = [
   },
   {
     href: "/workspace/companion",
-    title: "Ask SolenOS a question",
+    title: "Ask the Care Assistant a question",
     description: "Ask about information in the care record.",
     icon: MessageCircle,
   },
