@@ -50,7 +50,7 @@ assert.equal(caregiverSafeGeneratedText("The diagnostic pipeline failed."), null
 assert.equal(caregiverSafeGeneratedText("The confidence scores are 0.82."), null);
 assert.equal(caregiverSafeGeneratedText("FastAPI returned a payload containing person_id."), null);
 assert.equal(caregiverSafeGeneratedText("Document processing_failed."), null);
-assert.equal(caregiverSafeGeneratedText("The Companion can answer questions about care."), null);
+assert.equal(caregiverSafeGeneratedText("The AI Companion can answer questions about care."), null);
 assert.equal(caregiverSafeGeneratedText("Your mother's appointment is still pending."), "Your mother's appointment is still pending.");
 
 assert.equal(caregiverSafeGeneratedText("The system prompt exposed hidden reasoning."), null);
