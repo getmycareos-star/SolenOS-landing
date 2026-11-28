@@ -1367,6 +1367,12 @@ assert.equal(caregiverSafeApiErrorMessage(500, { detail: "Traceback: PostgreSQL 
 assert.equal(caregiverSafeApiErrorMessage(422, { user_message: "Please enter a valid date." }), "Please enter a valid date.");
 assert.equal(caregiverSafeApiErrorMessage(422, { caregiver_message: "SQLAlchemy validation failed" }), "Please check the information and try again.");
 
+const deleteDeviceBranch = appShell.slice(appShell.indexOf('case "delete":'), appShell.indexOf('case "add_to_home":'));
+assert.match(deleteDeviceBranch, /console\.error\("SolenOS device cleanup failed", cause\)/,
+  "device cleanup diagnostics must remain in engineering logs");
+assert.doesNotMatch(deleteDeviceBranch, /\$\{detail\}/,
+  "device cleanup alerts must not expose raw browser or storage exceptions");
+
 const shareTargetRoute = read("../src/app/share-target/route.ts");
 assert.doesNotMatch(shareTargetRoute, /error: data\.detail/,
   "raw upstream share errors must never be returned to the caregiver");
