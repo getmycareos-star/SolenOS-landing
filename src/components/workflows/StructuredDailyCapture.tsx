@@ -5,7 +5,7 @@ import { compressImage, dataURLtoFile } from '@/lib/imageCompression';
 import { extractAttachedDocument } from '@/components/mvp-workspace/capture/extract-attached';
 import { useOptimisticMutation } from '@/lib/optimistic';
 import { sendQueuedCareWrite } from "@/lib/offline-sync/send-queued-care-write";
-import { caregiverSourceText, caregiverSafeErrorMessage, caregiverSafeGeneratedText } from "@/lib/caregiver-language";
+import { caregiverSourceText, caregiverSafeErrorMessage, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
 import {
   discardBlockedDurableWrites,
   getDurableWriteSummary,
