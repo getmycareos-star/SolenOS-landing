@@ -209,7 +209,6 @@ const settings = read("../src/app/workspace/settings/page.tsx");
 const caregiverAccessPanel = read("../src/components/mvp-workspace/CaregiverAccessPanel.tsx");
 const followUpsPage = read("../src/app/workspace/open-loops/page.tsx");
 const reminders = read("../src/app/workspace/reminders/page.tsx");
-const openLoopsPage = read("../src/app/workspace/open-loops/page.tsx");
 const lcr = read("../src/components/mvp-workspace/LCRCurrentUnderstanding.tsx");
 const dementiaObservations = read("../src/components/mvp-workspace/DementiaObservationPanel.tsx");
 assert.match(lcr, /caregiverSourceText\(item\.title\)/,
