@@ -179,6 +179,7 @@ assert.match(caregiverSafeErrorMessage(), /check your connection/i);
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 const caregiverUiLanguageScanner = read("./verify-caregiver-ui-language-all.mts");
 const dailyCare = read("../src/app/workspace/daily-care/page.tsx");
+const careTimeline = read("../src/app/workspace/timeline/page.tsx");
 const dailyCareHistory = read("../src/app/workspace/timeline/page.tsx");
 const dailyCareRecentDocuments = read("../src/components/workflows/DailyCareRecentDocuments.tsx");
 const naturalDailyUpdate = read("../src/components/workflows/NaturalLanguageDailyUpdate.tsx");
