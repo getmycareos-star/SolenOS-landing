@@ -723,6 +723,13 @@ assert.match(careRecordOverview, /See what has been saved, who shared it/);
 assert.match(persistedOrientation, /hasRequiredSourceGaps \|\| hasOptionalSourceGaps \|\| projection\.schema_status !== "complete" \|\| projection\.item_count > 0[\s\S]*?This does not mean your Care Record is empty[\s\S]*?Your Care Record does not have any care information yet/, "an incomplete or unavailable source view must not be presented as an empty Care Record");
 assert.match(workspaceNav, /href: "\/workspace"[\s\S]*?label: "Today"/, "the primary Today destination opens the current care picture");
 assert.match(workspaceNav, /label: "Care Assistant"/, "the existing Companion remains reachable through its caregiver-facing Care Assistant destination");
+assert.match(currentUnderstanding, /Ask the Care Assistant a question/);
+assert.doesNotMatch(currentUnderstanding, /\bAsk SolenOS\b/,
+  "the Care Record must use the caregiver-facing Care Assistant name");
+assert.match(policySettings, /Care Assistant conversations/);
+assert.doesNotMatch(policySettings, /Ask SolenOS conversations/,
+  "privacy settings must use the same Care Assistant name as navigation");
+
 assert.doesNotMatch(workspaceNav, /label: "Living Care Record"|label: "AI Companion"/);
 assert.match(informationStatus, /Known/);
 assert.match(informationStatus, /Not sure yet/);
@@ -1324,6 +1331,7 @@ assert.match(dementiaObservation, /const loadSequenceRef = useRef\(0\)[\s\S]*?if
 assert.match(dementiaProfile, /const loadSequenceRef = useRef\(0\)[\s\S]*?if \(!isCurrentRequest\(\)\) return[\s\S]*?return \(\) => \{ loadSequenceRef\.current \+= 1; \};/,
   "late profile reads must not overwrite the active care record after a scope change");
 const currentUnderstanding = read("../src/components/mvp-workspace/LCRCurrentUnderstanding.tsx");
+const policySettings = read("../src/components/mvp-workspace/PolicySettingsPanel.tsx");
 assert.match(currentUnderstanding, /DementiaCareProfilePanel key=\{personId\}/,
   "the dementia profile must remount when the active person changes");
 assert.match(currentUnderstanding, /DementiaObservationPanel key=\{personId\}/,
